@@ -1,0 +1,6 @@
+.idea
+.rasa
+tests
+data_processing
+__pycache__
+*/__pycache__

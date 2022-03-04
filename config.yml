@@ -1,0 +1,43 @@
+recipe: default.v1
+
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 5
+  - name: DIETClassifier
+    epochs: 100
+    constrain_similarities: True
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    retrieval_intent: out_of_scope
+    scale_loss: false
+    epochs: 100
+  - name: ResponseSelector
+    retrieval_intent: faq
+    scale_loss: false
+    epochs: 100
+  - name: ResponseSelector
+    retrieval_intent: chitchat
+    scale_loss: false
+    epochs: 100
+  - name: FallbackClassifier
+    threshold: 0.7
+policies:
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "action_default_fallback"
+    enable_fallback_prediction: True
+  - max_history: 6
+    name: AugmentedMemoizationPolicy
+  - name: TEDPolicy
+    max_history: 10
+    epochs: 20
+    batch_size:
+    - 32
+    - 64

@@ -1,0 +1,11 @@
+version: "3.0"
+nlu:
+  - lookup: products
+    examples: |
+      - core
+      - dialogue management
+      - nlu
+      - x
+      - rasa x
+      - both
+      - all

@@ -1,0 +1,88 @@
+version: '3.0'
+
+intents:
+  - greet
+  - affirm
+  - cheer_up
+  - did_that_help
+  - goodbye
+  - happy
+  - deny
+  - bot_challenge
+  - trigger_booking
+  - destination
+  - contact_detail
+  - update_details
+  - inform
+  - positive_feedback
+
+entities:
+  - activity
+  - city
+  - email
+
+slots:
+  location:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: city
+        intent: destination
+        not_intent: inform
+
+  email_address:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: email
+        not_intent: inform
+
+  activity_type:
+    type: categorical
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: activity
+        intent: inform
+    values:
+      - museums
+      - theatre
+      - outdoors
+      - dining
+
+  has_booked:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+actions:
+  - action_validate_slot_mappings
+
+forms:
+  booking_form:
+    ignored_intents:
+      - greet
+      - bot_challenge
+    required_slots:
+      - location
+      - email_address
+
+responses:
+  utter_greet:
+    - text: "Hey! How are you?"
+
+  utter_cheer_up:
+    - text: "Here is something to cheer you up:"
+      image: "https://i.imgur.com/EH9l4wH.jpeg"
+
+  utter_did_that_help:
+    - text: "Did that help you"
+
+  utter_happy:
+    - text: "Great, carry you?"
+
+  utter_goodbye:
+    - text: "Bye"
