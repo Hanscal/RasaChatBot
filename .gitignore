@@ -2,5 +2,6 @@
 .rasa
 tests
 data_processing
+models
 __pycache__
 */__pycache__

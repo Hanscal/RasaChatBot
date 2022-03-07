@@ -1,0 +1,114 @@
+version: "3.0"
+
+nlu:
+  - intent: greet
+    examples: |
+      - 你好！
+      - 您好！
+      - hello!
+      - hi
+      - 喂
+      - 在么
+
+  - intent: goodbye
+    examples: |
+      - 拜拜！
+      - 再见！
+      - 拜
+      - 退出
+      - 结束
+
+  - intent: medicine
+    examples: |
+      - [感冒](disease)了，该吃什么药？
+      - 我[便秘](disease)了，该吃什么药?
+      - 我[胃痛](disease)，该吃什么药好？
+      - 一直打[喷嚏](disease),吃什么药好？
+      - 父母都有[高血压](disease)，我应该推荐他们吃什么药好呢？
+      - 头上烫烫的，感觉[发烧](disease)了，该吃什么药？
+      - [减肥](disease)有什么好的药品推荐吗？
+
+  - intent: medical_department
+    examples: |
+      - [感冒](disease)了，该去哪个科室看病？
+      - 我[便秘](disease)了，该去挂哪个科室的号？
+      - 我[胃痛](disease)，该去看哪个门诊啊？
+      - 一直打[喷嚏](disease),挂哪个科室的号啊？
+      - [头疼](disease)，该挂哪个科室？
+
+  - intent: medical_hospital
+    examples: |
+      - 我生病了，不知道去哪里看病。
+      - [减肥](disease)，有什么好的医院或健康中心推荐吗？
+      - 想做个[体检](disease)，哪里的医院或哪里的诊所或健康中心比较实惠啊？
+      - 父母都有[高血压](disease)，我应该推荐他们去哪家医院好呢？
+
+  - intent: query_time
+    examples: |
+      - 现在几点了
+      - 什么时候了
+      - 几点了
+      - 现在什么时候了
+      - 现在的时间
+
+  - intent: query_date
+    examples: |
+      - [今天](date)几号
+      - [今天](date)是几号
+      - [昨天](date)几号
+      - [明天](date)几号
+      - [今天](date)的日期
+      - [今天](date)几号了
+      - [明天](date)的日期
+      - 几号
+
+  - intent: query_weekday
+    examples: |
+      - [今天](date)星期几
+      - [明天](date)星期几
+      - [昨天](date)星期几
+      - [今天](date)是星期几
+      - 星期几
+
+  - intent: faq/notes
+    examples: |
+      - 应聘ACME校园招聘职位的注意事项?
+  - intent: faq/work_location
+    examples: |
+      - 校园招聘录取的应届生主要工作地点在哪里?
+  - intent: faq/max_job_request
+    examples: |
+      - 最多申请几个职位?
+  - intent: faq/audit
+    examples: |
+      - 各阶段审核说明
+  - intent: faq/write_exam_participate
+    examples: |
+      - 怎样参加笔试?
+  - intent: faq/write_exam_location
+    examples: |
+      - 笔试考试地点如何安排?
+  - intent: faq/write_exam_again
+    examples: |
+      - 笔试只安排一次吗?我笔试当天没有参加，是否还有再次笔试的机会?
+  - intent: faq/write_exam_with-out-offer
+    examples: |
+      - 如果我没有收到笔试通知，但我很想进入ACME，能否直接进入考场参加考试?
+  - intent: faq/interview_arrangement
+    examples: |
+      - 面试什么时候开始?会提前多少天通知面试安排?
+  - intent: faq/interview_times
+    examples: |
+      - 一般会安排几次面试?
+  - intent: faq/interview_from
+    examples: |
+      - 面试的形式是怎样的?是单独面试还是小组面试?
+  - intent: faq/interview_clothing
+    examples: |
+      - 对面试的服装有什么具体的要求?
+  - intent: faq/interview_paperwork
+    examples: |
+      - 面试时需要携带什么资料?
+  - intent: faq/interview_result
+    examples: |
+      - 如何查询面试结果?
