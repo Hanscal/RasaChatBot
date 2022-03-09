@@ -1,7 +1,7 @@
 # OverView
 **一个基于Rasa3.0+的中文对话机器人, 一方面支持知识问答，另一方面支持智能闲聊**
 
-# procedure
+# 创建项目一般步骤
 1. 初始化项目(rasa init);  
 2. 准备NLU数据(data/nlu.yml);  
 3. 配置NLU模型。  
@@ -11,8 +11,8 @@
 7. 训练模型；  
 8. 测试机器人； 
 
-# main procedure
-1. rasa data validate
+# 项目快速启动
+1. rasa data validate [对标注数据进行检查]  
 
         用法: rasa data validate [-h] [-v] [-vv] [--quiet] [-d DOMAIN] [--data DATA]
         
@@ -27,17 +27,24 @@
          -vv, --debug   打印大量的调试语句。设置日志记录级别为 DEBUG。(默认:None)
          --quiet        将日志记录级别设置为WARNING。(默认:None)
 
-2. rasa train (train both nlu and core)  
-3. rasa run actions (optional) if you redefined actions, 
-4. rasa run -m models --endpoints endpoints.yml (run the rasa bot)  
-5. rasa shell (interactive with chat bot)
-6. rasa evaluate markers all out.csv (evaluate chat bot) 
+2. rasa train (train both nlu and core) [同时训练NLU模块和Core模块]  
+3. rasa run actions (optional) if you redefined actions [如果没有定义actions，这个步骤可以跳过]  
+4. rasa run -m models --endpoints endpoints.yml (run the rasa bot) [或者直接运行rasa run]   
+5. rasa shell (interactive with chat bot) [与训练的机器人交互]  
+6. rasa evaluate markers all out.csv (evaluate chat bot) [评估部分，前期可略过]
 
+## 学习资料
+1. [官方文档](https://rasa.com/blog/what-s-ahead-in-rasa-open-source-3-0/)
+2. [YouTube视频](https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ)
+3. [快速入门讲解](https://www.youtube.com/watch?v=PfYBXidENlg)
 
-## TODO 
-###  Action
+## 下一步工作 
+### Entity
+1. 对于明确的实体进行定义，并且作出有针对性的回答。
+ 
+### Action
 1. 进行数据校验, 和数据交互，采用MySQL存储FQA数据，通过接口实现功能分离；  
-2. 采用Py2Neo与数据库(Neo4j)进行交互. 
+2. 与数据库(Neo4j)进行交互. 
 
 ### Tokenizer
 1. 自定义分词器，实现实体边界的覆盖；

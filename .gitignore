@@ -3,5 +3,6 @@
 tests
 data_processing
 models
+log
 __pycache__
 */__pycache__

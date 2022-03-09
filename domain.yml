@@ -3,42 +3,32 @@ version: '3.0'
 intents:
   - greet
   - goodbye
-  - medicine
-  - medical_department
-  - medical_hospital
-  - query_time
-  - query_date
-  - query_weekday
   - faq
 
-entities:
-  - disease
-  - date
-
-slots:
-  date:
-    type: text
-    influence_conversation: false
-    mappings:
-      - type: from_entity
-        entity: date
+#entities:
+#  - disease
+#  - date
+#
+#slots:
+#  date:
+#    type: text
+#    influence_conversation: false
+#    mappings:
+#      - type: from_entity
+#        entity: date
 
 responses:
   utter_greet:
-    - text: 你好，我是 Uni，是一个基于RASA的问答机器人。
+    - text: "你好!"
 
   utter_goodbye:
     - text: "再见！"
 
-  utter_default:
-    - text: 不好意思，我还不明白您说的话。
+#  utter_default:
+#    - text: 不好意思，我还不明白您说的话。
 
 actions:
-  - action_query_time
-  - action_query_date
-  - action_query_weekday
   - utter_goodbye
   - utter_greet
-  - utter_default
   - respond_faq
 
