@@ -35,8 +35,9 @@
 
 ## 学习资料
 1. [官方文档](https://rasa.com/blog/what-s-ahead-in-rasa-open-source-3-0/)
-2. [YouTube视频](https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ)
-3. [快速入门讲解](https://www.youtube.com/watch?v=PfYBXidENlg)
+2. [YouTube官方视频](https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ)
+3. [快速入门讲解英文](https://www.youtube.com/watch?v=PfYBXidENlg)
+4. [快速入门项目中文](https://github.com/Chinese-NLP-book/rasa_chinese_book_code)
 
 ## 下一步工作 
 ### Entity
