@@ -1,21 +1,71 @@
 version: '3.0'
 
 intents:
+  - bot_challenge
   - greet
   - goodbye
   - faq
+  - query_knowledge_base:
+        use_entities: [ ]
+  - play_song
+  - play_album
 
-#entities:
-#  - disease
-#  - date
-#
-#slots:
-#  date:
-#    type: text
-#    influence_conversation: false
-#    mappings:
-#      - type: from_entity
-#        entity: date
+entities:
+  - object_type
+  - mention
+  - attribute
+  - object-type
+  - song
+  - singer
+  - gender
+
+slots:
+  attribute:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: attribute
+  gender:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: gender
+  knowledge_base_last_object:
+    type: any
+    mappings:
+      - type: custom
+  knowledge_base_last_object_type:
+    type: any
+    mappings:
+      - type: custom
+  knowledge_base_listed_objects:
+    type: any
+    mappings:
+      - type: custom
+  knowledge_base_objects:
+    type: any
+    mappings:
+      - type: custom
+  mention:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: mention
+  object_type:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: object_type
+  singer:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: singer
+  song:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: song
 
 responses:
   utter_greet:
@@ -24,11 +74,24 @@ responses:
   utter_goodbye:
     - text: "再见！"
 
-#  utter_default:
-#    - text: 不好意思，我还不明白您说的话。
+  utter_iamabot:
+    - text: "我是一个机器人"
+
+  utter_default:
+    - text: "系统不明白您说的话"
+
+  utter_ask_rephrase:
+    - text: "抱歉系统没能明白您的话，请您重新表述一次"
 
 actions:
   - utter_goodbye
   - utter_greet
   - respond_faq
+  - action_response_query
+  - utter_default
+  - utter_ask_rephrase
+
+session_config:
+  session_expiration_time: 60  # value in minutes
+  carry_over_slots_to_new_session: true
 

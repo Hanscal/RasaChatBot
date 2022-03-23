@@ -4,3 +4,19 @@ rules:
     steps:
       - intent: faq
       - action: utter_faq
+  - rule: greet
+    steps:
+      - intent: greet
+      - action: utter_greet
+  - rule: goodbye
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye
+  - rule: low confidence
+    steps:
+      - intent: nlu_fallback
+      - action: action_default_fallback
+  - rule: bot challenge
+    steps:
+      - intent: bot_challenge
+      - action: utter_iamabot
