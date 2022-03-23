@@ -8,3 +8,11 @@ stories:
     steps:
       - intent: goodbye
       - action: utter_goodbye
+  - story: greet and then query knowledge base
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: query_knowledge_base
+      - action: action_response_query
+      - intent: query_knowledge_base
+      - action: action_response_query
