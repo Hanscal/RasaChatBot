@@ -6,22 +6,19 @@
 @Email   : hua.cai@unidt.com
 """
 
-import os
 import json
 import os
-from collections import defaultdict
 from typing import Any, Dict, List, Text
 
-from rasa_sdk import Action, Tracker, utils
-from rasa_sdk.events import SlotSet
+from rasa_sdk import utils
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.knowledge_base.actions import ActionQueryKnowledgeBase
 from rasa_sdk.knowledge_base.storage import InMemoryKnowledgeBase
 
-USE_NEO4J = bool(os.getenv("USE_NEO4J", False))
+USE_NEO4J = bool(os.getenv("USE_NEO4J", True))
 
 if USE_NEO4J:
-    from neo4j_knowledge_base import Neo4jKnowledgeBase
+    from actions.neo4j_kb import Neo4jKnowledgeBase
 
 
 class EnToZh:
@@ -40,7 +37,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def __init__(self):
         if USE_NEO4J:
             print("using Neo4jKnowledgeBase")
-            knowledge_base = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "43215678")
+            knowledge_base = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "CHneo4j")
         else:
             print("using InMemoryKnowledgeBase")
             knowledge_base = InMemoryKnowledgeBase("song_data.json")
@@ -65,7 +62,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         if objects:
             dispatcher.utter_message(text="找到下列{}:".format(self.en_to_zh(object_type)))
 
-            if utils.is_coroutine_action(
+            if utils.call_potential_coroutine(
                 self.knowledge_base.get_representation_function_of_object
             ):
                 repr_function = await self.knowledge_base.get_representation_function_of_object(

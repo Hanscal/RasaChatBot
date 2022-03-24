@@ -3,15 +3,15 @@ stories:
   - story: say greet
     steps:
       - intent: greet
-      - action: utter_greet
+      - action: utter_answer_greet
   - story: say goodbye
     steps:
       - intent: goodbye
-      - action: utter_goodbye
+      - action: utter_answer_goodbye
   - story: greet and then query knowledge base
     steps:
       - intent: greet
-      - action: utter_greet
+      - action: utter_answer_greet
       - intent: query_knowledge_base
       - action: action_response_query
       - intent: query_knowledge_base

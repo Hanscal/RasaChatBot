@@ -7,16 +7,16 @@ rules:
   - rule: greet
     steps:
       - intent: greet
-      - action: utter_greet
+      - action: utter_answer_greet
   - rule: goodbye
     steps:
       - intent: goodbye
-      - action: utter_goodbye
+      - action: utter_answer_goodbye
   - rule: low confidence
     steps:
       - intent: nlu_fallback
       - action: action_default_fallback
   - rule: bot challenge
     steps:
-      - intent: bot_challenge
-      - action: utter_iamabot
+      - intent: whoareyou
+      - action: utter_answer_whoareyou

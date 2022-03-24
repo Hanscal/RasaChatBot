@@ -1,7 +1,7 @@
 version: "3.0"
 
 nlu:
-  - intent: bot_challenge
+  - intent: whoareyou
     examples: |
       - 你是机器人吗?
       - 你是真人吗?
@@ -11,7 +11,9 @@ nlu:
   - intent: greet
     examples: |
       - 你好！
+      - 你好
       - 您好！
+      - 您好
       - hello!
       - hi
       - 喂
@@ -1066,9 +1068,11 @@ nlu:
   - synonym: birthday
     examples: |
       - 生日
+      - 出生日期
   - synonym: song
     examples: |
       - 歌曲
+      - 歌
   - synonym: singer
     examples: |
       - 歌手

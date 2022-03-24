@@ -39,13 +39,18 @@
 3. [快速入门讲解英文](https://www.youtube.com/watch?v=PfYBXidENlg)
 4. [快速入门项目中文](https://github.com/Chinese-NLP-book/rasa_chinese_book_code)
 
+# CHANGELOG
+* 实现闲聊功能API接入--20220325
+* 实现neo4j知识库功能接入--20220318
+
+
 ## 下一步工作 
 ### Entity
 1. 对于明确的实体进行定义，并且作出有针对性的回答。
  
 ### Action
 1. 进行数据校验, 和数据交互，采用MySQL存储FQA数据，通过接口实现功能分离；  
-2. 与数据库(Neo4j)进行交互. 
+2. 与数据库(Neo4j)进行交互，更多的实体和关系属性定义. 
 
 ### Tokenizer
 1. 自定义分词器，实现实体边界的覆盖；

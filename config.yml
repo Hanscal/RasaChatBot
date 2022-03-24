@@ -3,6 +3,7 @@ recipe: default.v1
 language: zh
 pipeline:
   - name: JiebaTokenizer
+    dictionary_path: "data/dict"
   - name: LanguageModelFeaturizer
     model_name: bert
     model_weights: bert-base-chinese

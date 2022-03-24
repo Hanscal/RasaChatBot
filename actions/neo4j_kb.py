@@ -27,7 +27,7 @@ def _dict_to_cypher(data):
 
 class Neo4jKnowledgeBase(KnowledgeBase):
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
 
         self.representation_attribute = defaultdict(lambda: "name")
 
@@ -171,7 +171,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
     ):
         print("<_do_get_object>: ", object_type, object_identifier, key_attribute, representation_attribute, relation)
         # preprocess attr value
-        if object_identifier.isdigit():
+        if isinstance(object_identifier,str) and object_identifier.isdigit():
             object_identifier = int(object_identifier)
         else:
             object_identifier = '"{}"'.format(object_identifier)
@@ -285,7 +285,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
 if __name__ == "__main__":
     import asyncio
 
-    kb = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "43215678")
+    kb = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "CHneo4j")
     loop = asyncio.get_event_loop()
 
     result = loop.run_until_complete(kb.get_objects("singer", [], 5))
@@ -306,7 +306,7 @@ if __name__ == "__main__":
     print(result)
 
     result = loop.run_until_complete(kb.get_object("singer", "0"))
-    print(result)
+    print('id=0',result)
 
     result = loop.run_until_complete(kb.get_object("singer", "周杰伦"))
     print(result)

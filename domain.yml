@@ -1,7 +1,7 @@
 version: '3.0'
 
 intents:
-  - bot_challenge
+  - whoareyou
   - greet
   - goodbye
   - faq
@@ -9,6 +9,12 @@ intents:
         use_entities: [ ]
   - play_song
   - play_album
+  - affirm
+  - deny
+  - thanks
+  - whattodo
+  - stop
+  - chitchat
 
 entities:
   - object_type
@@ -68,28 +74,73 @@ slots:
         entity: song
 
 responses:
-  utter_greet:
+  utter_answer_greet:
     - text: "你好!"
+    - text: "您好！请问我可以帮到您吗？"
+    - text: "您好！很高兴为您服务。请说出您要查询的功能？"
 
-  utter_goodbye:
+  utter_answer_goodbye:
     - text: "再见！"
+    - text: "拜拜"
+    - text: "虽然我有万般舍不得，但是天下没有不散的宴席~祝您安好！"
+    - text: "期待下次再见！"
+    - text: "嗯嗯，下次需要时随时记得我哟~"
+    - text: "see you!"
 
-  utter_iamabot:
+  utter_answer_whoareyou:
+    - text: "您好！我是小U呀，您的AI智能助理"
     - text: "我是一个机器人"
 
   utter_default:
     - text: "系统不明白您说的话"
+    - text: "没听懂，请换种说法吧~"
 
   utter_ask_rephrase:
     - text: "抱歉系统没能明白您的话，请您重新表述一次"
 
+  utter_answer_affirm:
+    - text: "嗯嗯，好的！"
+    - text: "嗯嗯，很开心能够帮您解决问题~"
+    - text: "嗯嗯，还需要什么我能够帮助您的呢？"
+
+  utter_answer_deny:
+    - text: "主人，您不开心吗？不要离开我哦"
+    - text: "怎么了，主人？"
+
+  utter_answer_thanks:
+    - text: "嗯呢。不用客气~"
+    - text: "这是我应该做的，主人~"
+    - text: "嗯嗯，合作愉快！"
+
+
+  utter_answer_whattodo:
+    - text: "您好！很高兴为您服务，我目前只支持直播QA和闲聊哦。"
+
+  utter_ask_continue:
+    - text: "请问您还要继续吗?"
+
+  utter_noworries:
+    - text: "不用客气 :)"
+    - text: "没事啦"
+    - text: "不客气哈，都是老朋友了 :)"
+
+  utter_chitchat:
+    - text: "呃呃呃呃呃"
+    - text: "您这是在尬聊吗？"
+
 actions:
-  - utter_goodbye
-  - utter_greet
+  - utter_answer_goodbye
+  - utter_answer_greet
   - respond_faq
   - action_response_query
   - utter_default
   - utter_ask_rephrase
+  - utter_answer_affirm
+  - utter_answer_deny
+  - utter_answer_thanks
+  - utter_answer_whoareyou
+  - utter_answer_whattodo
+  - action_default_fallback
 
 session_config:
   session_expiration_time: 60  # value in minutes
