@@ -15,6 +15,8 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.knowledge_base.actions import ActionQueryKnowledgeBase
 from rasa_sdk.knowledge_base.storage import InMemoryKnowledgeBase
 
+file_root = os.path.dirname(__file__)
+
 USE_NEO4J = bool(os.getenv("USE_NEO4J", True))
 
 if USE_NEO4J:
@@ -44,7 +46,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         super().__init__(knowledge_base)
 
-        self.en_to_zh = EnToZh("en_to_zh.json")
+        self.en_to_zh = EnToZh(os.path.join(file_root, "../data/kb/en_to_zh.json"))
 
     async def utter_objects(
         self,

@@ -39,10 +39,6 @@
 3. [快速入门讲解英文](https://www.youtube.com/watch?v=PfYBXidENlg)
 4. [快速入门项目中文](https://github.com/Chinese-NLP-book/rasa_chinese_book_code)
 
-# CHANGELOG
-* 实现闲聊功能API接入--20220325
-* 实现neo4j知识库功能接入--20220318
-
 
 ## 下一步工作 
 ### Entity
