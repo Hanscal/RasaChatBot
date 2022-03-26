@@ -17,13 +17,13 @@ action_endpoint:
 # By default the conversations are stored in memory.
 # https://rasa.com/docs/rasa/tracker-stores
 
-#tracker_store:
-#    type: redis
-#    url: <host of the redis instance, e.g. localhost>
-#    port: <port of your redis instance, usually 6379>
-#    db: <number of your database within redis, e.g. 0>
-#    password: <password used for authentication>
-#    use_ssl: <whether or not the communication is encrypted, default false>
+tracker_store:
+    type: redis
+    url: localhost
+    port: 6379
+    db: 1
+    password:
+    use_ssl: false
 
 #tracker_store:
 #    type: mongod
@@ -40,3 +40,8 @@ action_endpoint:
 #  username: username
 #  password: password
 #  queue: queue
+
+socketio:
+  user_message_evt: user_uttered
+  bot_message_evt: bot_uttered
+  session_persistence: true
