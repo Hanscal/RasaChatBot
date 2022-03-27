@@ -48,5 +48,17 @@
 1. 模型部署与负载均衡；
 2. 服务访问方式。
 
-### 加入简单前端交互页面
+
+### api和web测试
+**api请求**
+```python
+import json
+import requests
+url = "http://113.31.111.86:48088/live_assistant_api"
+response = requests.post(url=url, data=json.dumps({"user_name":"hanscal","message":"你好"}))
+print(response.json())
+```
+
+**web测试**  
+* 在浏览器中输入网址`http://113.31.111.86:48088/live_assistant_ui`  
 ![聊天界面](static/img/chatmessage.png)
