@@ -39,7 +39,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def __init__(self):
         if USE_NEO4J:
             print("using Neo4jKnowledgeBase")
-            knowledge_base = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "CHneo4j")
+            knowledge_base = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "CHneo4j")  # 根据情况修改
         else:
             print("using InMemoryKnowledgeBase")
             knowledge_base = InMemoryKnowledgeBase("song_data.json")

@@ -13,10 +13,7 @@ rasa run actions # &> log/rasa_actions.log
 ## 设置worker数量
 export SANIC_WORKERS=1
 ## 解决客户端和rasa服务器跨域问题
-rasa run --cors "*" # &> log/rasa_server.log
+rasa run --cors "*" --enable-api # &> log/rasa_server.log
 
-# 启动webserver
+# 启动webserver,有两个路由服务，一个是api接口，一个是ui接口
 python start_service.py # &> log/live_assistant_server.log
-
-# 启动web界面可以测试
-python -m http.server 8089

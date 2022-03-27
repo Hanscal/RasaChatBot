@@ -6,7 +6,6 @@
 @Email   : hua.cai@unidt.com
 """
 
-import json
 from collections import defaultdict
 from typing import Any, Dict, List, Text
 
@@ -285,7 +284,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
 if __name__ == "__main__":
     import asyncio
 
-    kb = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "CHneo4j")
+    kb = Neo4jKnowledgeBase("bolt://localhost:7687", "neo4j", "CHneo4j")   # 测试代码，根据情况修改
     loop = asyncio.get_event_loop()
 
     result = loop.run_until_complete(kb.get_objects("singer", [], 5))

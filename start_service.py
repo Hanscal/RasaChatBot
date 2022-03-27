@@ -21,9 +21,9 @@ CORS(app, supports_credentials=True)
 def live_assistant_api():
     """
     前端调用接口
-        路径：/ai
-        请求方式：GET、POST
-        请求参数：content
+        路径：/live_assistant_api
+        请求方式：POST
+        请求参数：user_name, message
     :return: response rasa响应数据
     """
     b0 = time.time()
@@ -33,6 +33,12 @@ def live_assistant_api():
         message_input = data_json['message']
         user_name = data_json.get('user_name','hanscal')
         response = requestRasabotServer(user_name, message_input)
+        response = eval(response)
+        if response and isinstance(response, list):
+            response = '\n'.join([i['text'] for i in response])
+    else:
+        logging.info("only support post method!")
+    print("response: ", response)
     print('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":response},ensure_ascii=False)
 
@@ -43,17 +49,17 @@ def live_assistant_ui():
     前端调用接口
         路径：/ai
         请求方式：GET、POST
-        请求参数：content
+        请求参数：question
     :return: response rasa响应数据
     """
     if request.method == 'POST':
         b0 = time.time()
         question = request.form["question"]
-        print(question)
-        answer = requestRasabotServer(question, 'hanscal')
+        answer = requestRasabotServer('hanscal', question)
         answer = eval(answer)
         if answer and isinstance(answer, list):
-            answer = answer[0]['text']
+            answer = '\n'.join([i['text'] for i in answer])
+        print("response: ", answer)
         print('total costs {:.2f}s'.format(time.time() - b0))
         return json.dumps({'answer': answer},ensure_ascii=False)
 
@@ -88,8 +94,7 @@ if __name__ == '__main__':
         datefmt='%a, %d %b %Y %H:%M:%S',
     )
 
-    # 启动服务，开启多线程、debug模式
-    # 浏览器访问http://127.0.0.1:8088/ai?content="你好"
+    # 启动服务，开启多线程模式
     app.run(
         host='0.0.0.0',
         port=8088,
