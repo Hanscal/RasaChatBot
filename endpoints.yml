@@ -20,7 +20,7 @@ action_endpoint:
 tracker_store:
     type: redis
     url: localhost
-    port: 6379
+    port: 6389
     db: 1
     password:
     use_ssl: false

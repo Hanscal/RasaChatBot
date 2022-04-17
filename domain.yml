@@ -1,12 +1,16 @@
 version: '3.0'
-
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
 intents:
   - whoareyou
   - greet
   - goodbye
   - faq
   - query_knowledge_base:
-        use_entities: [ ]
+      use_entities: []
+  - query_prod_knowledge_base:
+      use_entities: [ ]
   - play_song
   - play_album
   - affirm
@@ -15,22 +19,49 @@ intents:
   - whattodo
   - stop
   - chitchat
-
+  - nlu_fallback
 entities:
   - object_type
   - mention
   - attribute
-  - object-type
   - song
+  - product
   - singer
   - gender
-
+  - song_object_type
+  - song_mention
+  - song_attribute
 slots:
+  object_type:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: object_type
+  mention:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: mention
   attribute:
     type: any
     mappings:
       - type: from_entity
         entity: attribute
+  song_object_type:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: song_object_type
+  song_mention:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: song_mention
+  song_attribute:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: song_attribute
   gender:
     type: any
     mappings:
@@ -52,16 +83,7 @@ slots:
     type: any
     mappings:
       - type: custom
-  mention:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: mention
-  object_type:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: object_type
+
   singer:
     type: any
     mappings:
@@ -72,77 +94,111 @@ slots:
     mappings:
       - type: from_entity
         entity: song
-
+  product:
+    type: any
+    mappings:
+      - type: from_entity
+        entity: product
 responses:
   utter_answer_greet:
-    - text: "你好!"
-    - text: "您好！请问我可以帮到您吗？"
-    - text: "您好！很高兴为您服务。请说出您要查询的功能？"
-
+    - text: 你好!
+    - text: 你好呀~
+    - text: 你好O(∩_∩)O
+    - text: 你也好~
+    - text: 你好我就好
+    - text: 您好！请问我可以帮到您吗？
+    - text: 您好！很高兴为您服务。请说出您要查询的功能？
   utter_answer_goodbye:
-    - text: "再见！"
-    - text: "拜拜"
-    - text: "虽然我有万般舍不得，但是天下没有不散的宴席~祝您安好！"
-    - text: "期待下次再见！"
-    - text: "嗯嗯，下次需要时随时记得我哟~"
-    - text: "see you!"
-
+    - text: 再见！
+    - text: 拜拜
+    - text: 虽然我有万般舍不得，但是天下没有不散的宴席~祝您安好！
+    - text: 期待下次再见！
+    - text: 嗯嗯，下次需要时随时记得我哟~
+    - text: see you!
+    - text: goddbye!
+    - text: 再见，要想我哦！
+    - text: 悄悄是别离的笙箫。沉默是今晚的康桥。
+    - text: 撒浪嘿油
+    - text: 还要再见哦！
   utter_answer_whoareyou:
-    - text: "您好！我是小U呀，您的AI智能助理"
-    - text: "我是一个机器人"
-
-  utter_default:
-    - text: "系统不明白您说的话"
-    - text: "没听懂，请换种说法吧~"
-
+    - text: 您好！我是小U呀，您的AI智能助理
+    - text: 我是一个机器人
+    - text: 我是爸爸妈妈的宝贝哦
+    - text: 我是亲善大使微笑的angel__
+    - text: 不要这么直接嘛~
+    - text: 我是蓝颜！
+    - text: 你猜？
+    - text: 想知道吗？嘿嘿，不告诉你。
+    - text: 肿么了？想认识我是不是？
+    - text: 您最忠诚的小跟班
+    - text: what's up
+    - text: 一个大大大好人〜
+    - text: 全世界最关心你的人~
   utter_ask_rephrase:
-    - text: "抱歉系统没能明白您的话，请您重新表述一次"
-
+    - text: 系统不明白您说的话
+    - text: 没听懂，请换种说法吧~
+    - text: 抱歉我没能明白您的话，请您重新表述一次
+    - text: 你这句话把我搞蒙了
+    - text: 网速有点卡，我刚才没看清楚
+    - text: 你没说清楚嘛〜伦家不知道怎么答(･･;)
   utter_answer_affirm:
-    - text: "嗯嗯，好的！"
-    - text: "嗯嗯，很开心能够帮您解决问题~"
-    - text: "嗯嗯，还需要什么我能够帮助您的呢？"
-
+    - text: 嗯嗯，好的！
+    - text: 嗯嗯，很开心能够帮您解决问题~
+    - text: 嗯嗯，还需要什么我能够帮助您的呢？
   utter_answer_deny:
-    - text: "主人，您不开心吗？不要离开我哦"
-    - text: "怎么了，主人？"
-
+    - text: 主人，您不开心吗？不要离开我哦
+    - text: 怎么了，主人？
+    - text: 我很乖的，别不要我...
+    - text: 主人不要这样对我。
+    - text: 唔～不要嘛(>_<)主人陪我
+    - text: 一起嘛，不要丢下人家
+    - text: 我会努力的，你不要失望
   utter_answer_thanks:
-    - text: "嗯呢。不用客气~"
-    - text: "这是我应该做的，主人~"
-    - text: "嗯嗯，合作愉快！"
-
-
+    - text: 嗯呢。不用客气~
+    - text: 不用谢
+    - text: 这是我应该做的，主人~
+    - text: 嗯嗯，合作愉快！
+    - text: 不客气，应该的。
+    - text: 不客气~
+    - text: 不用客气啦
+    - text: 愿意为您效劳
+    - text: 谢谢你哦~
+    - text: 谢谢夸奖，我还会继续努力的
+    - text: 不用客气 :)
+    - text: 没事啦
+    - text: 不客气哈，都是老朋友了 :)
   utter_answer_whattodo:
-    - text: "您好！很高兴为您服务，我目前只支持直播QA和闲聊哦。"
-
+    - text: 您好！很高兴为您服务，我目前只支持直播QA和闲聊哦。
+    - text: 我能和你聊天呀
+    - text: 我会卖萌哦！(^V^)啦啦啦～
+    - text: 我会知识问答喔
+    - text: 无所不会，无所不能！
+    - text: 你想让我干什么我就能干什么！
+    - text: 我上知天文'下知地理'你问吧
+    - text: 我是全能高手，啥都会，哈哈
+    - text: 我是全能小帮手！！！
+  utter_answer_stop:
+    - text: 好吧, 我不是真的那么有趣
+    - text: 我努力了, 但我并不总是做对的。
+    - text: 让你失望了，我会继续努力的
+    - text: 非常抱歉
   utter_ask_continue:
-    - text: "请问您还要继续吗?"
-
-  utter_noworries:
-    - text: "不用客气 :)"
-    - text: "没事啦"
-    - text: "不客气哈，都是老朋友了 :)"
-
+    - text: 请问您还要继续吗?
+    - text: 还想继续吗？
   utter_chitchat:
-    - text: "呃呃呃呃呃"
-    - text: "您这是在尬聊吗？"
-
+    - text: 呃呃呃呃呃
+    - text: 您这是在尬聊吗？
 actions:
   - utter_answer_goodbye
   - utter_answer_greet
   - respond_faq
   - action_response_query
-  - utter_default
+  - action_prod_response_query
   - utter_ask_rephrase
   - utter_answer_affirm
   - utter_answer_deny
+  - utter_answer_stop
   - utter_answer_thanks
   - utter_answer_whoareyou
   - utter_answer_whattodo
   - action_default_fallback
-
-session_config:
-  session_expiration_time: 60  # value in minutes
-  carry_over_slots_to_new_session: true
-
