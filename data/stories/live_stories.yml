@@ -1,0 +1,68 @@
+version: "3.0"
+stories:
+  - story: greet and product
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: product_quality
+      - action: action_product_quality
+  - story: greet and slocation
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_location
+      - action: action_shipment_location
+  - story: greet and stime
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_time
+      - action: action_shipment_time
+  - story: greet and sprice
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_price
+      - action: action_shipment_price
+  - story: greet and spackage
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_package
+      - action: action_shipment_package
+  - story: greet and sprice
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_return
+      - action: action_shipment_return
+  - story: greet and sinsurance
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_insurance
+      - action: action_shipment_insurance
+  - story: greet and scompany
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: shipment_company
+      - action: action_shipment_company
+  - story: greet and discount
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: discount
+      - action: action_discount
+  - story: greet and dlottery
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: discount_lottery
+      - action: action_discount_lottery
+  - story: greet and hservice
+    steps:
+      - intent: greet
+      - action: utter_answer_greet
+      - intent: human_service
+      - action: action_human_service

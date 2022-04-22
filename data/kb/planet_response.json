@@ -1,0 +1,13 @@
+{
+  "utter_product_quality":[],
+  "utter_shipment_location": [],
+  "utter_shipment_time": [],
+  "utter_shipment_price": [],
+  "utter_shipment_package": [],
+  "utter_shipment_return":[],
+  "utter_shipment_insurance": [],
+  "utter_shipment_company": [],
+  "utter_discount": ["下单的宝宝不要忘记加入会员，还有很多优惠券可以领哦。"],
+  "utter_discount_lottery": [],
+  "utter_human_service":["地球主义的人工一般是早上9点到晚上十点在线哦"]
+}

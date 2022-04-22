@@ -396,7 +396,7 @@ if __name__ == "__main__":
     result = loop.run_until_complete(
         kb.get_objects(
             "song",
-            [{"name": "name", "value": "晴天"}, {"name": "album", "value": "叶惠美"}],
+            [{"name": "name", "value": "晴天"}, {"name": "album", "value": "叶惠美"}, {"name": "singer", "value": "周杰伦"}],
             5,
         )
     )

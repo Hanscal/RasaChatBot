@@ -7,6 +7,17 @@ intents:
   - greet
   - goodbye
   - faq
+  - product_quality
+  - shipment_location
+  - shipment_time
+  - shipment_price
+  - shipment_package
+  - shipment_return
+  - shipment_insurance
+  - shipment_company
+  - discount
+  - discount_lottery
+  - human_service
   - query_knowledge_base:
       use_entities: []
   - query_prod_knowledge_base:
@@ -192,6 +203,17 @@ actions:
   - utter_answer_goodbye
   - utter_answer_greet
   - respond_faq
+  - action_product_quality
+  - action_shipment_location
+  - action_shipment_time
+  - action_shipment_price
+  - action_shipment_package
+  - action_shipment_return
+  - action_shipment_insurance
+  - action_shipment_company
+  - action_discount
+  - action_discount_lottery
+  - action_human_service
   - action_response_query
   - action_prod_response_query
   - utter_ask_rephrase

@@ -32,7 +32,9 @@ def live_assistant_api():
         data_json = request.get_json(force=True)
         message_input = data_json['message']
         user_name = data_json.get('user_name','hanscal')
-        response = requestRasabotServer(user_name, message_input)
+        shop_name = data_json.get('shop_name','')
+        input_name = shop_name+':'+user_name
+        response = requestRasabotServer(input_name, message_input)
         response = eval(response)
         if response and isinstance(response, list):
             response = '\n'.join([i['text'] for i in response])
