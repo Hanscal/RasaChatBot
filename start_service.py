@@ -57,7 +57,7 @@ def live_assistant_ui():
     if request.method == 'POST':
         b0 = time.time()
         question = request.form["question"]
-        answer = requestRasabotServer('hanscal', question)
+        answer = requestRasabotServer('planet:hanscal', question)  # 默认地球主义的展示
         answer = eval(answer)
         if answer and isinstance(answer, list):
             answer = '\n'.join([i['text'] for i in answer])

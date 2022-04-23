@@ -10,10 +10,9 @@ import os
 import random
 import re
 from collections import defaultdict
-from typing import Text, Dict, Any, List, Callable, Optional
+from typing import Text, Dict, Any, List
 from rasa_sdk import utils
 from rasa_sdk import Action, Tracker
-from rasa_sdk.types import DomainDict
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.knowledge_base.storage import KnowledgeBase
 from rasa_sdk.knowledge_base.actions import ActionQueryKnowledgeBase
@@ -33,117 +32,72 @@ from rasa_sdk.knowledge_base.utils import (
 
 from neo4j import GraphDatabase
 from py2neo import Graph
-from markdownify import markdownify as md
 
-
+shop_list = ['yunjing','planet']
 file_root = os.path.dirname(__file__)
-p = os.path.join(file_root, '../data/dict/planet.txt')
-disease_names = [i.strip().split(' ')[0] for i in open(p, 'r', encoding='UTF-8').readlines()]
 # default neo4j account should be user="neo4j", password="neo4j"
 graph = Graph(uri="bolt://113.31.111.86:48087", user="neo4j", password="CHneo4j")
 
-
-def retrieve_prod_name(name):
-    names = []
-    name = '.*' + '.*'.join(list(name)) + '.*'
-    pattern = re.compile(name)
-    for i in disease_names:
-        candidate = pattern.search(i)
-        if candidate:
-            names.append(candidate.group())
-    return names
-
-
-# class ActionEcho(Action):
-#     def name(self) -> Text:
-#         return "action_echo"
-#
-#     def run(self,
-#             dispatcher: CollectingDispatcher,
-#             tracker: Tracker,
-#             domain: Dict[Text, Any]):
-#         user_say = "You said: " + tracker.latest_message['text']
-#         dispatcher.utter_message(user_say)
-#         return []
-#
-#
-# class ActionDonKnow(Action):
-#     def name(self) -> Text:
-#         return "action_donknow"
-#
-#     def run(self,
-#             dispatcher: CollectingDispatcher,
-#             tracker: Tracker,
-#             domain: Dict[Text, Any]):
-#         dispatcher.utter_template("utter_donknow", tracker)
-#         # dispatcher.utter_template("utter_howcanhelp", tracker)
-#         dispatcher.utter_message(md("您可以这样向我提问: <br/>头痛怎么办<br/>\
-#                                       什么人容易头痛<br/>\
-#                                       头痛吃什么药<br/>\
-#                                       头痛能治吗<br/>\
-#                                       头痛属于什么科<br/>\
-#                                       头孢地尼分散片用途<br/>\
-#                                       如何防止头痛<br/>\
-#                                       头痛要治多久<br/>\
-#                                       糖尿病有什么并发症<br/>\
-#                                       糖尿病有什么症状"))
-#         return []
-#
-#
-# class ActionProdIntro(Action):
-#     def name(self) -> Text:
-#         return "action_prod_intro"
-#
-#     def run(self,
-#             dispatcher: CollectingDispatcher,
-#             tracker: Tracker,
-#             domain: Dict[Text, Any]):
-#
-#         prod = tracker.get_slot("prod")  # 这是产品的名字
-#
-#         possible_prod = retrieve_prod_name(prod)
-#         # todo 从user_id中得到shop_id
-#         shop = 'planet'
-#         # if len(possible_diseases) == 1 or sure == "true":
-#         if prod or len(possible_prod) == 1:
-#             a = graph.run("match (a:$shop {name: $prod}) return a", shop=shop, prod=prod).data()[0]['a']
-#             if "intro" in a:
-#                 intro = a['intro']
-#                 template = "{0}的简介：{1}"
-#                 retmsg = template.format(prod, intro)
-#             else:
-#                 retmsg = prod + "暂无简介"
-#             dispatcher.utter_message(retmsg)
-#         elif len(possible_prod) > 1:
-#             retmsg = '找到这几款产品：{}。你需要哪一款呢？'.format('，'.join(possible_prod))
-#             dispatcher.utter_message(retmsg)
-#         else:
-#             dispatcher.utter_message("知识库中暂无与 {0} 产品相关的记录".format(prod))
-#         return []
+class RetrieveProduct(object):
+    def __init__(self, shop_name):
+        if shop_name.lower() == 'yunjing':
+            p = os.path.join(file_root, '../data/dict/yunjing.txt')
+            self.prod_names = [i.strip().split(' ')[0] for i in open(p, mode='r', encoding='utf-8').readlines() if i]
+        elif shop_name.lower() == 'planet':
+            p = os.path.join(file_root, '../data/dict/planet.txt')
+            self.prod_names = [i.strip().split(' ')[0] for i in open(p, mode='r', encoding='utf-8').readlines() if i]
+        else:
+            self.prod_names = []
 
 
-class EnToZh:
+    def retrieve_prod_name(self, name):
+        names = []
+        name = '.*' + '.*'.join(list(name)) + '.*'
+        pattern = re.compile(name)
+        for i in self.prod_names:
+            candidate = pattern.search(i)
+            if candidate:
+                names.append(candidate.group())
+        return names
+
+
+class EnToZh(object):
     def __init__(self):
         self.data = {
-            "planet_product":"地球主义产品",
+            "product": "产品",
             "name": "产品名",
             "intro": "介绍",
             "price": "原价",
             "arrive_price": "优惠价",
             "specification": "规格",
-            "ingredient":"成分",
-            "smell":"气味",
-            "effect":"功效",
-            "people":"适用人群",
-            "expiration":"保质期",
-            "package":"包装",
-            "place":"生产地",
-            "brand":"品牌",
-            "氨基酸保湿护发洗发水": "氨基酸保湿护发洗发水(1号链接)",
-            "防脱固发洗发水": "防脱固发洗发水(2号链接)",
-            "丝润双萃分层喷雾": "丝润双萃分层喷雾(3号链接)",
-            "柔润闪耀鎏沙精华液": "柔润闪耀鎏沙精华液(4号链接)"
-                     }
+            "ingredient": "成分",
+            "smell": "气味",
+            "effect": "功效",
+            "people": "适用人群",
+            "expiration": "保质期",
+            "package": "包装",
+            "place": "生产地",
+            "brand": "品牌"
+        }
+
+    def update(self, shop_name=''):
+        if shop_name == 'planet':
+            self.data.update({
+                "smell":"气味",
+                "氨基酸保湿护发洗发水": "氨基酸保湿护发洗发水(1号链接)",
+                "防脱固发洗发水": "防脱固发洗发水(2号链接)",
+                "丝润双萃分层喷雾": "丝润双萃分层喷雾(3号链接)",
+                "柔润闪耀鎏沙精华液": "柔润闪耀鎏沙精华液(4号链接)"
+                         })
+        elif shop_name == 'yunjing':
+            self.data.update({
+                "people_not": "不适用人群",
+                "place_intro":"产地介绍",
+                "prod_eat":"食用方法",
+                "prod_intro":"产品介绍",
+                "prod_nurture":"产品培养",
+                "景芝一号破壁灵芝孢子粉": "景芝一号破壁灵芝孢子粉(1号链接)"
+            })
 
     def __call__(self, key):
         return self.data.get(key, key)
@@ -199,43 +153,34 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         Returns: list of slots
         """
-        object_attributes = await utils.call_potential_coroutine(
-            self.knowledge_base.get_attributes_of_object(object_type)
-        )
+        object_attributes = await utils.call_potential_coroutine(self.knowledge_base.get_attributes_of_object(object_type))
 
         # get all set attribute slots of the object type to be able to filter the
         # list of objects
         attributes = get_attribute_slots(tracker, object_attributes)
         # query the knowledge base
-        objects = await utils.call_potential_coroutine(
-            self.knowledge_base.get_objects(object_type, attributes)
-        )
+        objects = await utils.call_potential_coroutine(self.knowledge_base.get_objects(object_type, attributes))
 
-        await utils.call_potential_coroutine(
-            self.utter_objects(dispatcher, object_type, objects)
-        )
+        await utils.call_potential_coroutine(self.utter_objects(dispatcher, object_type, objects))
 
         if not objects:
             return reset_attribute_slots(tracker, object_attributes)
 
-        key_attribute = await utils.call_potential_coroutine(
-            self.knowledge_base.get_key_attribute_of_object(object_type)
-        )
+        key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
 
         last_object = None if len(objects) > 1 else objects[0][key_attribute]
 
         user_id = tracker.sender_id
         shop_id = user_id.split(':')[0]
-        object_type_wo_shop = object_type[len(shop_id):] # 这里有问题，需要将shop name 去除
+        # 在run函数中已经确保一定是在这个shop_list里面
+        object_type_wo_shop = object_type[len(shop_id):]  # 这里有问题，需要将shop name 去除
         slots = [
             SlotSet(SLOT_OBJECT_TYPE, object_type_wo_shop),
             SlotSet(SLOT_MENTION, None),
             SlotSet(SLOT_ATTRIBUTE, None),
             SlotSet(SLOT_LAST_OBJECT, last_object),
             SlotSet(SLOT_LAST_OBJECT_TYPE, object_type_wo_shop),
-            SlotSet(
-                SLOT_LISTED_OBJECTS, list(map(lambda e: e[key_attribute], objects))
-            ),
+            SlotSet(SLOT_LISTED_OBJECTS, list(map(lambda e: e[key_attribute], objects))),
         ]
 
         return slots + reset_attribute_slots(tracker, object_attributes)
@@ -261,9 +206,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                 text="{}的{}是：{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name),self.en_to_zh(attribute_value))
             )
         else:
-            dispatcher.utter_message(
-                text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name))
-            )
+            dispatcher.utter_message(text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name)))
 
     async def _query_attribute(
         self,
@@ -282,7 +225,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         Returns: list of slots
         """
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
 
         if not object_name or not attribute:
@@ -305,11 +248,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         object_identifier = object_of_interest[key_attribute]
 
-        await utils.call_potential_coroutine(
-            self.utter_attribute_value(
-                dispatcher, object_representation, attribute, value
-            )
-        )
+        await utils.call_potential_coroutine(self.utter_attribute_value(dispatcher, object_representation, attribute, value))
 
         slots = [
             SlotSet(SLOT_OBJECT_TYPE, object_type),
@@ -320,90 +259,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         ]
 
         return slots
-
-    def get_object_name(self,
-            tracker: "Tracker",
-            ordinal_mention_mapping: Dict[Text, Callable],
-            use_last_object_mention: bool = True,
-    ) -> Optional[Text]:
-        """
-        Get the name of the object the user referred to. Either the NER detected the
-        object and stored its name in the corresponding slot (e.g. "PastaBar"
-        is detected as "restaurant") or the user referred to the object by any kind of
-        mention, such as "first one" or "it".
-
-        Args:
-            tracker: the tracker
-            ordinal_mention_mapping: mapping that maps an ordinal mention to an object in a list
-            use_last_object_mention: if true the last mentioned object is returned if
-            no other mention could be detected
-
-        Returns: the name of the actual object (value of key attribute in the
-        knowledge base)
-        """
-        mention = tracker.get_slot(SLOT_MENTION)
-        object_type = tracker.get_slot(SLOT_OBJECT_TYPE)
-
-        # the user referred to the object by a mention, such as "first one"
-        if mention:
-            return self.resolve_mention(tracker, ordinal_mention_mapping)
-
-        # check whether the user referred to the objet by its name
-        object_name = tracker.get_slot(object_type)
-        if object_name:
-            return object_name
-
-        if use_last_object_mention:
-            # if no explicit mention was found, we assume the user just refers to the last
-            # object mentioned in the conversation
-            return tracker.get_slot(SLOT_LAST_OBJECT)
-
-        return None
-
-    def resolve_mention(self,
-            tracker: "Tracker", ordinal_mention_mapping: Dict[Text, Callable]
-    ) -> Optional[Text]:
-        """
-        Resolve the given mention to the name of the actual object.
-
-        Different kind of mentions exist. We distinguish between ordinal mentions and
-        all others for now.
-        For ordinal mentions we resolve the mention of an object, such as 'the first
-        one', to the actual object name. If multiple objects are listed during the
-        conversation, the objects are stored in the slot 'knowledge_base_listed_objects'
-        as a list. We resolve the mention, such as 'the first one', to the list index
-        and retrieve the actual object (using the 'ordinal_mention_mapping').
-        For any other mention, such as 'it' or 'that restaurant', we just assume the
-        user is referring to the last mentioned object in the conversation.
-
-        Args:
-            tracker: the tracker
-            ordinal_mention_mapping: mapping that maps an ordinal mention to an object in a list
-
-        Returns: name of the actually object
-        """
-
-        mention = tracker.get_slot(SLOT_MENTION)
-        listed_items = tracker.get_slot(SLOT_LISTED_OBJECTS)
-        last_object = tracker.get_slot(SLOT_LAST_OBJECT)
-        last_object_type = tracker.get_slot(SLOT_LAST_OBJECT_TYPE)
-        current_object_type = tracker.get_slot(SLOT_OBJECT_TYPE)
-
-        if not mention:
-            return None
-
-        if listed_items and mention in ordinal_mention_mapping:
-            idx_function = ordinal_mention_mapping[mention]
-            return idx_function(listed_items)
-
-        # NOTE:
-        # for now we just assume that if the user refers to an object, for
-        # example via "it" or "that restaurant", they are actually referring to the last
-        # object that was detected.
-        if current_object_type == last_object_type:
-            return last_object
-
-        return None
 
     async def run(
         self,
@@ -426,27 +281,33 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         Returns: list of slots
 
         """
+        import pdb;pdb.set_trace()
         object_type = tracker.get_slot(SLOT_OBJECT_TYPE)
         last_object_type = tracker.get_slot(SLOT_LAST_OBJECT_TYPE)
         attribute = tracker.get_slot(SLOT_ATTRIBUTE)
         user_id = tracker.sender_id
         shop_id = user_id.split(':')[0]
-        # user_id = 'planet'
-
-        new_request = object_type != last_object_type
-
-        if not object_type:
-            # object type always needs to be set as this is needed to query the
-            # knowledge base
+        if shop_id not in shop_list:
+            print('请检查直播商店名是否正确')
             dispatcher.utter_message(response="utter_ask_rephrase")
             return []
 
-        if not attribute or new_request:
+        # 对需要查询的字典进行指定更新
+        self.en_to_zh.update(shop_name=shop_id)
+        new_request = object_type != last_object_type
+
+        # 进入这个函数说明就是查询产品的
+        # if not object_type:
+        #     # object type always needs to be set as this is needed to query the
+        #     # knowledge base
+        #     dispatcher.utter_message(response="utter_ask_rephrase")
+        #     return []
+        if attribute and object_type:
+            return await self._query_attribute(dispatcher, shop_id + '_' + object_type, attribute, tracker)
+        elif not attribute or new_request:
             return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
         elif attribute:
-            return await self._query_attribute(
-                dispatcher, shop_id+'_'+object_type, attribute, tracker
-            )
+            return await self._query_attribute(dispatcher, shop_id+'_'+object_type, attribute, tracker)
 
         dispatcher.utter_message(response="utter_ask_rephrase")
         return []
@@ -457,23 +318,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
 
         self.representation_attribute = defaultdict(lambda: "name")
-        self.relation_attributes = {"Planet_product": {}}
-
-        self.ordinal_mention_mapping = {
-            "1": lambda l: l[0],
-            "2": lambda l: l[1],
-            "3": lambda l: l[2],
-            "4": lambda l: l[3],
-            "5": lambda l: l[4],
-            "6": lambda l: l[5],
-            "7": lambda l: l[6],
-            "8": lambda l: l[7],
-            "9": lambda l: l[8],
-            "10": lambda l: l[9],
-            "ANY": lambda l: random.choice(l),
-            "LAST": lambda l: l[-1],
-        }
-
+        self.relation_attributes = defaultdict(lambda: {})
         self.key_attribute = defaultdict(lambda: "id")
         self.representation_function = defaultdict(lambda: lambda obj: obj["name"])
 
@@ -502,7 +347,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         return result
 
     def do_get_attributes_of_object(self, object_type) -> List[Text]:
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         with self._driver.session() as session:
             result = session.write_transaction(self._do_get_attributes_of_object, object_type)
 
@@ -511,10 +356,6 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         return result
 
     def _do_get_attributes_of_object(self, tx, object_type) -> List[Text]:
-        # if object_type in ['氨基酸保湿护发洗发水','防脱固发洗发水','丝润双萃分层喷雾', '柔润闪耀鎏沙精华液']:
-        #     query = "MATCH (o:{object_type} {{name:{value}}}) RETURN o LIMIT 1".format(object_type='product', value=object_type )
-        # else:
-
         query = "MATCH (o:{object_type}) RETURN o LIMIT 1".format(object_type=object_type)
         print(query)
         result = tx.run(query,)
@@ -633,7 +474,6 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         print(query)
         result = tx.run(query,)
         record = result.single()
-
         if record:
             attr_dict = dict(record[0].items())
             oid = record[1]

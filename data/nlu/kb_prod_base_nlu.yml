@@ -9,9 +9,9 @@ nlu:
     - 直播哪几款[商品](object_type)？
     - 有哪几款[产品](object_type)介绍？
     - 今天要介绍哪几款[产品](object_type)？
-    - [1号链接](product)[介绍一下](attribute)
-    - [2号](product)[讲一下](attribute)
-    - [第一个](product)产品可以[看看](attribute)吗
+    - [1号链接](product)[产品](object_type)[介绍一下](attribute)
+    - [2号](product)(产品)[object_type][讲一下](attribute)
+    - [第一个](product)产品(object_type)可以[看看](attribute)吗
     - [4号](product)可以[看看](attribute)吗
     - 想[看一下](attribute)[3号](product)
     - 想[看](attribute)[2号](product)
