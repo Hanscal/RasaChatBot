@@ -7,7 +7,6 @@
 """
 
 import os
-import random
 import re
 from collections import defaultdict
 from typing import Text, Dict, Any, List
@@ -83,6 +82,7 @@ class EnToZh(object):
     def update(self, shop_name=''):
         if shop_name == 'planet':
             self.data.update({
+                "planet_product": "地球主义产品",
                 "smell":"气味",
                 "氨基酸保湿护发洗发水": "氨基酸保湿护发洗发水(1号链接)",
                 "防脱固发洗发水": "防脱固发洗发水(2号链接)",
@@ -91,6 +91,7 @@ class EnToZh(object):
                          })
         elif shop_name == 'yunjing':
             self.data.update({
+                "yunjing_product":"云景主义产品",
                 "people_not": "不适用人群",
                 "place_intro":"产地介绍",
                 "prod_eat":"食用方法",
@@ -281,7 +282,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         Returns: list of slots
 
         """
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         object_type = tracker.get_slot(SLOT_OBJECT_TYPE)
         last_object_type = tracker.get_slot(SLOT_LAST_OBJECT_TYPE)
         attribute = tracker.get_slot(SLOT_ATTRIBUTE)
