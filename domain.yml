@@ -202,6 +202,7 @@ responses:
 actions:
   - utter_answer_goodbye
   - utter_answer_greet
+  - action_answer_greet
   - respond_faq
   - action_product_quality
   - action_shipment_location

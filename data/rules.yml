@@ -7,7 +7,7 @@ rules:
   - rule: greet
     steps:
       - intent: greet
-      - action: utter_answer_greet
+      - action: action_answer_greet
   - rule: goodbye
     steps:
       - intent: goodbye
