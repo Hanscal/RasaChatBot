@@ -5,17 +5,34 @@
 @Author  : hcai
 @Email   : hua.cai@unidt.com
 """
+import os
 import time
 import uuid
-from flask import Flask, render_template
-from flask import request
-from flask_cors import CORS
-import requests
 import json
-import logging
+
+from flask import Flask, request, redirect, url_for, render_template, flash, session
+from flask_cors import CORS
+from flask_wtf import FlaskForm
+from flask_login import LoginManager, login_user, logout_user, login_required
+from wtforms import StringField, PasswordField
+from wtforms.validators import DataRequired
+
+from scripts.user_model import User, query_user
+from scripts.chat_request import requestRasabotServer, requestRasabot
+
+from config.config import get_logger, proj_root
+logger = get_logger('live',os.path.join(proj_root, 'log/live_assistant.log'))
 
 app = Flask(__name__,template_folder='templates',static_folder='static')
 CORS(app, supports_credentials=True)
+app.secret_key = '1234567'
+
+login_manager = LoginManager()
+login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
+login_manager.login_message = '请登录'
+login_manager.init_app(app)
+
 
 @app.route('/live_assistant_api', methods=['POST'])
 def live_assistant_api():
@@ -39,9 +56,9 @@ def live_assistant_api():
         if response and isinstance(response, list):
             response = '\n'.join([i['text'] for i in response])
     else:
-        logging.info("only support post method!")
-    print("response: ", response)
-    print('total costs {:.2f}s'.format(time.time() - b0))
+        logger.error("only support post method!")
+    logger.info("response: ", response)
+    logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":response},ensure_ascii=False)
 
 
@@ -66,10 +83,11 @@ def nlu_parse_api():
         intent_name = intent.get('name',None)
         intent_confidence = intent.get('confidence', None)
     else:
-        logging.info("only support post method!")
-    print("response: ", response)
-    print('total costs {:.2f}s'.format(time.time() - b0))
+        logger.error("only support post method!")
+    logger.info("response: ", response)
+    logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":{'intent_name':intent_name, 'intent_confidence':intent_confidence}},ensure_ascii=False)
+
 
 @app.route('/rasa_parse_api', methods=['POST'])
 def rasa_parse_api():
@@ -89,12 +107,14 @@ def rasa_parse_api():
         method = data_json.get('method','post')
         response = requestRasabot(url, params, method)
     else:
-        logging.info("only support post method!")
-    print("response: ", response)
-    print('total costs {:.2f}s'.format(time.time() - b0))
+        logger.info("only support post method!")
+    logger.info("response: ", response)
+    logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":response},ensure_ascii=False)
 
+
 @app.route('/live_assistant_ui', methods=['GET','POST'])
+@login_required
 def live_assistant_ui():
     """
     前端调用接口
@@ -103,66 +123,69 @@ def live_assistant_ui():
         请求参数：question
     :return: response rasa响应数据
     """
+    shop_name = session.get('shopname','')
+    user_name = session.get('username','')
+    username = "登录用户: "+user_name+" ("+shop_name+")" if shop_name and user_name else None
+    if not user_name:
+        logger.info('用户登录失效，请重新登录！')
+        return redirect(url_for('login'))
     if request.method == 'POST':
         b0 = time.time()
         question = request.form["question"]
-        answer = requestRasabotServer('planet:hanscal', question)  # 默认地球主义的展示
+        answer = requestRasabotServer(shop_name+':'+user_name, question)
         answer = eval(answer)
         if answer and isinstance(answer, list):
             answer = '\n'.join([i['text'] for i in answer])
-        print("response: ", answer)
-        print('total costs {:.2f}s'.format(time.time() - b0))
+        logger.info("response: ", answer)
+        logger.info('total costs {:.2f}s'.format(time.time() - b0))
         return json.dumps({'answer': answer},ensure_ascii=False)
 
-    return render_template("index.html")
+    return render_template("chat.html", username=username)
 
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
 
-def requestRasabotServer(userid, content):
-    """
-        访问rasa服务
-    :param userid: 用户id
-    :param content: 自然语言文本
-    :return:  json格式响应数据
-    """
-    params = {'sender': userid, 'message': content}
-    # rasa使用rest channel
-    # https://rasa.com/docs/rasa/user-guide/connectors/your-own-website/#rest-channels
-    # POST /webhooks/rest/webhook
-    rasaUrl = "http://{0}:{1}/webhooks/rest/webhook".format('0.0.0.0', '5005')
+# 用户登录控制
+class LoginForm(FlaskForm):
+    """登录表单类"""
+    shopname = StringField('商铺名', validators=[DataRequired()])
+    username = StringField('用户名', validators=[DataRequired()])
+    password = PasswordField('密码', validators=[DataRequired()])
 
-    response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
-    response = response.text.encode('utf-8').decode("unicode-escape")
-    return response
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
 
-def requestRasabot(url, params, method='post'):
-    """
-        访问rasa服务
-    :param url: 相对路由
-    :param content: params是请求参数
-    :param method: 请求方式
-    :return:  json格式响应数据
-    """
-    rasaUrl = "http://{0}:{1}/{2}".format('0.0.0.0', '5005', url)
-    response = ''
-    if method == 'post':
-        response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
-        response = response.text
-    elif method == 'get':
-        response = requests.get(rasaUrl, headers={'Content-Type': 'application/json'})
-        response = response.text
-    response = response.encode('utf-8').decode("unicode-escape")
-    return response
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if request.method == "POST":
+        shop_name = request.form["shopname"]
+        password = request.form["password"]
+        user_info = query_user(shop_name)  # 从用户数据中查找用户记录
+        if user_info is None:
+            emsg = "用户名或密码密码有误"
+        else:
+            user = User(user_info)  # 构建用户实体
+            if user.verify_password(password):  # 校验密码
+                login_user(user)  # 创建用户 Session
+                session['shopname'] = user.shopname
+                session['username'] = user.username
+                return redirect(request.args.get('next') or url_for('live_assistant_ui'))  # request.args.get('next') or
+            else:
+                emsg = "用户名或密码密码有误"
+        flash(message=emsg)
+        logger.error(emsg)
+    return render_template('login.html',form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    # 初始化日志引擎
-    fh = logging.FileHandler(encoding='utf-8', mode='a', filename='./log/live_assistant.log')
-    logging.basicConfig(
-        handlers=[fh],
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%a, %d %b %Y %H:%M:%S',
-    )
-
     # 启动服务，开启多线程模式
     app.run(
         host='0.0.0.0',

@@ -4,6 +4,7 @@ nlu:
   examples: |
     - 今天直播哪几款[产品](object_type)？
     - 今天直播什么[产品](object_type)
+    - 今天有哪些直播[产品](object_type)？
     - 今天有什么直播[产品](object_type)?
     - 有哪些[产品](object_type)介绍？
     - 直播哪几款[商品](object_type)？
@@ -34,8 +35,6 @@ nlu:
     - [介绍一下](attribute)[第一个](product)[产品](object_type)
     - [这个](mention)[多少钱](attribute)呢
     - [1号](product)现在[多少钱](attribute)
-    - [2号链接](product)是什么[味道](attribute)
-    - [这个](mention)[小朋友](attribute)能用吗?
     - [1号](product)[多少钱](attribute)呢
     - [2号](product)现在卖[多少钱](attribute)
     - [价格多少](attribute)
@@ -61,10 +60,11 @@ nlu:
     - [145号](product)怎么买才能有[最低价](attribute)？
     - [10号链接](product)有[活动](attribute)吗
 
-
 - synonym: '1'
   examples: |
+    - 第一
     - 第一个
+    - 第一款
     - 首个
     - 1号链接
     - 一号链接
@@ -72,21 +72,27 @@ nlu:
     - 一号
 - synonym: '2'
   examples: |
+    - 第二
     - 第二个
+    - 第二款
     - 2号链接
     - 二号链接
     - 2号
     - 二号
 - synonym: '3'
   examples: |
+    - 第三
     - 第三个
+    - 第三款
     - 3号链接
     - 三号链接
     - 3号
     - 三号
 - synonym: '4'
   examples: |
+    - 第四
     - 第四个
+    - 第四款
     - 4号链接
     - 四号链接
     - 4号

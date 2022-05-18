@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html {
+            height: 100%;
+        }
+        body {
+            height: 100%;
+        }
+        .container {
+            height: 100%;
+            background-image: linear-gradient(to right, #fbc2eb, #a6c1ee);
+        }
+        .login-wrapper {
+            background-color: #fff;
+            width: 358px;
+            height: 588px;
+            border-radius: 15px;
+            padding: 0 50px;
+            position: relative;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .header {
+            font-size: 38px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 200px;
+        }
+        .input-item {
+            display: block;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 0;
+            padding: 10px;
+            border-bottom: 1px solid rgb(128, 125, 125);
+            font-size: 15px;
+            outline: none;
+        }
+        .input-item:placeholder {
+            text-transform: uppercase;
+        }
+        .btn {
+            text-align: center;
+            padding: 10px;
+            width: 100%;
+            margin-top: 40px;
+            background-image: linear-gradient(to right, #a6c1ee, #fbc2eb);
+            color: #fff;
+        }
+        .msg {
+            text-align: center;
+            line-height: 88px;
+        }
+        a {
+            text-decoration-line: none;
+            color: #abc1ee;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="login-wrapper">
+            <div class="header">Login</div>
+            <form action="/login" class="form-wrapper" method="post">
+                <input type="text" name="shopname" placeholder="shopname" class="input-item">
+                <input type="text" name="username" placeholder="nickname" class="input-item">
+                <input type="password" name="password" placeholder="password" class="input-item">
+                <button type="submit" class="btn">登录</button>
+            </form>
+            <div class="msg">
+                Don't have account?
+                <a href="#">Sign up</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+<!--{% macro render_field(field) %} &lt;!&ndash; 定义字段宏 &ndash;&gt;-->
+<!--  <dt>{{ field.label }}:-->
+<!--  <dd>{{ field(**kwargs)|safe }}-->
+<!--  {% if field.errors %}-->
+<!--    <ul class=errors>-->
+<!--    {% for error in field.errors %}-->
+<!--      <li>{{ error }}</li>-->
+<!--    {% endfor %}-->
+<!--    </ul>-->
+<!--  {% endif %}-->
+<!--  </dd>-->
+<!--{% endmacro %}-->
+
+<!-- 登录表单 -->
+<!--<div class="divForm">-->
+<!--    <form method="POST">-->
+<!--        {{ form.csrf_token }}-->
+<!--        {{ render_field(form.shopname) }}-->
+<!--        {{ render_field(form.username) }}-->
+<!--        {{ render_field(form.password) }}-->
+<!--        {% if emsg %}  &lt;!&ndash; 如果有错误信息 则显示 &ndash;&gt;-->
+<!--            <h3> {{ emsg }}</h3>-->
+<!--        {% endif %}-->
+<!--        <input type="submit" value="登录">-->
+<!--    </form>-->
+<!--</div>-->

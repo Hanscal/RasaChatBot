@@ -5,42 +5,38 @@
 @Author  : hcai
 @Email   : hua.cai@unidt.com
 """
-
-import tornado.web
-import tornado.ioloop
 import json
-import uuid
-import random
-
-import requests
 import os
+import random
 from datetime import datetime
-from unidt_log import logger
+
+from flask import Flask, request
+from flask_cors import CORS
 
 from scripts.mysql_opt import LiveDB
+from scripts.external_service import synthesize_audio, get_personality
+from config.config import get_logger, proj_root
+logger = get_logger('danmu',os.path.join(proj_root, 'log/live_danmu.log'))
 
+app = Flask(__name__,template_folder='templates',static_folder='static')
+CORS(app, supports_credentials=True)
 
 live_db = LiveDB()
 
-
-
-sql1 = "insert into danmu(b_id,room_name,room_id,room_type,user_id,live_id,content,publish_time,publisher_nick,label,date) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-sql2 = "insert into danmu(b_id,room_name,room_id,room_type,user_id,live_id,content,publish_time,publisher_nick,label,date,version) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-
-class KnowSendHandler(tornado.web.RequestHandler):
-
-    def post(self, *args):
-        self.set_header('Content-Type', 'application/json')
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.set_header('Access-Control-Allow-Methods', 'POST')
-
+@app.route('/know_send', methods=['POST'])
+def know_send():
+    """
+    前端调用接口将评论数据插入到数据库
+        路径：/know_send
+        请求方式：POST
+        请求参数：b_id, room_name, room_id, room_type, user_id, live_id, content, publish_time, publisher_nick\
+        label, version
+    :return: 响应数据状态 200为成功，400为不成功
+    """
+    ret = {'code': '400'}
+    if request.method == 'POST':
         try:
-
-            params = self.request.body
-            jstr = params.decode('utf-8')
-            js = json.loads(jstr)
-
+            js = request.get_json(force=True)
             b_id = js.get('b_id')
             room_name = js.get('room_name')
             room_id = js.get('room_id')
@@ -53,97 +49,80 @@ class KnowSendHandler(tornado.web.RequestHandler):
             label = js.get('label')
             now = datetime.now()
             version = js.get('version')
-
-            db,cursor = live_db.get_conn()
+            db, cursor = live_db.get_conn()
             if version:
                 try:
+                    sql2 = "insert into danmu(b_id,room_name,room_id,room_type,user_id,live_id,content,publish_time,publisher_nick,label,date,version) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                     cursor.execute(sql2, (b_id,room_name,room_id,room_type,user_id,live_id,content,publish_time,publisher_nick,label,now,version))
                 except Exception as e:
-                    print(e)
+                    logger.error(e)
                     db.rollback()
-                    logger.error("know_send comment insertion error", model_name="None", prod_name="数字人评论互动")
+                    logger.error("know_send comment insertion error")
                 else:
                     db.commit()
-                    logger.info("know_send comment inserted", model_name="None")
+                    logger.info("know_send comment inserted")
             else:
                 try:
+                    sql1 = "insert into danmu(b_id,room_name,room_id,room_type,user_id,live_id,content,publish_time,publisher_nick,label,date) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                     cursor.execute(sql1, (b_id,room_name,room_id,room_type,user_id,live_id,content,publish_time,publisher_nick,label,now))
                 except Exception as e:
-                    print(e)
+                    logger.error(e)
                     db.rollback()
-                    logger.error("know_send comment insertion error", model_name="None", prod_name="数字人评论互动")
+                    logger.error("know_send comment insertion error")
                 else:
                     db.commit()
-                    logger.info("know_send comment inserted", model_name="None")
+                    logger.info("know_send comment inserted")
 
             cursor.close()
             db.close()
 
             ret = {'code': '200'}
         except Exception as e:
-            print(e)
-            ret = {'code': '400'}
-            logger.error("know_send comment insertion error", model_name="None", prod_name="数字人评论互动")
-
-        self.write(json.dumps(ret, ensure_ascii=False))
+            logger.error(e)
+            logger.info("know_send comment insertion error")
+    return json.dumps(ret, ensure_ascii=False)
 
 
-class KnowOpenHandler(tornado.web.RequestHandler):
+@app.route('/know_open', methods=['POST'])
+def know_open():
     """
     记录打开知识库时发送给嘉道的爬虫请求
+        路径：/know_open
+        请求方式：POST
+        请求参数：b_id, room_name, room_id, room_type, user_id, live_id, content, publish_time, publisher_nick\
+        label, version
+    :return: 响应数据状态 200为成功，400为不成功
     """
-    def post(self, *args):
-        self.set_header('Content-Type', 'application/json')
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.set_header('Access-Control-Allow-Methods', 'POST')
+    ret = {'code': '400', "msg":"请求方法必须为POST！"}
+    if request.method == 'POST':
+        params = request.get_json(force=True)
+        jstr = str(params)
+        ret = {"code": "200", "msg":"know_open request received"}
 
-        params = self.request.body
-        jstr = params.decode('utf-8')
-
-        ret = {
-            "code": "200"
-        }
-        logger.info("know_open request received", model_name="None")
-
-        resp = json.dumps(ret, ensure_ascii=False)
-        with open('know_open_log.txt', 'a') as f:
-            f.write(str(datetime.now()) + '|' + jstr + '|' + resp + '\n')
-        self.write(resp)
+        logger.info("know_open request received")
+        logger.info("know_open_log:"+str(datetime.now()) + '|' + jstr + '|' + str(ret) + '\n')
+    return json.dumps(ret, ensure_ascii=False)
 
 
-
-
-text_dic = {'O': ["嗨！抓住你了，猜猜我和主播还有什么技能？多发评论有彩蛋哟",
-                  "欢迎你！我猜你是小姐姐，猜对了的话，要给我点小红心哟，不许抵赖！咩！"],
-            'C': ["你好呀！有问题可以发在评论中，多利和主播会努力回答的！",
-                  "欢迎进入直播间。多利隔着屏幕就看出你是个靠谱的人，巧了 ，我也是。咩！"],
-            'E': ["你来啦？我看你骨骼清奇颇有领袖气质，快帮我转发分享吧家人。",
-                  "恭喜你！发现了我们这个宝藏直播间！大家一起欢迎他！呜呼"],
-            'A': ["你好咩？多利嗅出了你是个温柔的人，想用软敷敷的羊毛蹭蹭你。",
-                  "欢迎进来，好心人，可以帮我点点右边小红心吗？多利手太短了，够不着。"],
-            'N': ["欢迎进到直播间。多利发现你是个内心细腻的人，没说错吧？",
-                  "欢迎进入直播间，最近生活是不是有些焦虑？多来直播间放松一下吧。"]}
-
-class TagFetchHandler(tornado.web.RequestHandler):
+@app.route('/tag_fetch', methods=['POST'])
+def tag_fetch():
     """
-    前端每3秒循环调用此接口
+    记录打开知识库时发送给嘉道的爬虫请求
+        路径：/tag_fetch
+        请求方式：POST
+        请求参数：b_id, room_type
+    :return: 响应数据状态 200为成功，400为不成功
     """
-    def post(self, *args):
-        self.set_header('Content-Type', 'application/json')
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.set_header('Access-Control-Allow-Methods', 'POST')
-
-        params = self.request.body
-        jstr = params.decode('utf-8')
-        js = json.loads(jstr)
+    ret = {'code': '400', "msg":"请求方法必须为POST！"}
+    jstr = ''
+    if request.method == 'POST':
         try:
+            js = request.get_json(force=True)
+            jstr = str(js)
             bid = js.get('b_id')
             room_type = js.get('room_type')
 
             now = datetime.now()
-
             recent_response_detected = live_db.detect_recent_response(bid)
             """符合规则返回False，否则返回True。已去除回答间隔2分钟的限制"""
             if recent_response_detected:
@@ -151,7 +130,7 @@ class TagFetchHandler(tornado.web.RequestHandler):
                     "code": "200",
                     "task_list": []
                 }
-                logger.info("tag_fetch no answerable comment", model_name="None")
+                logger.info("tag_fetch no answerable comment")
             else:
                 sql_cha = "select uid,video_id,confidence,date,theme,link,content,answer,publisher_nick" \
                           " from danmu where answerable=1 and b_id={} and room_type={} and version != 1" \
@@ -171,7 +150,7 @@ class TagFetchHandler(tornado.web.RequestHandler):
                     try:
                         cursor.execute(sql_update.format(uid))
                     except Exception as e:
-                        print(e)
+                        logger.info(e)
                         db.rollback()
                     else:
                         db.commit()
@@ -202,30 +181,12 @@ class TagFetchHandler(tornado.web.RequestHandler):
                     b, c, d, e, f, g, h = l[-1]  # theme, confidence, uid, content, answer, link, publisher_nick
                     if b == '欢迎':
                         #返回小挂件所需的wav
-                        text_list = []
-
-                        url = "http://113.31.111.86:19068/personality"
-                        dic = {"nickname": h}
-                        res = requests.post(url, data=json.dumps(dic))
-                        result_dic = res.json()
-
-                        if result_dic['msg'] == 'success':
-                            personality = result_dic['result']
-                            for key in personality.keys():
-                                if abs(personality[key]) == 1:
-                                    text_list.extend(text_dic[key])
+                        text_list = get_personality(nickname=h)
 
                         if len(text_list) > 0:
                             text = h + random.choice(text_list)
                             """念出昵称和打招呼话术"""
-                            audio_url = "http://113.31.111.86:19034/synthesize_single"
-                            dic = {"task_id": "sitong",
-                                   "text": text,
-                                   "speech_control": 1.0,
-                                   "volume_control": 100}
-                            res = requests.post(audio_url, data=json.dumps(dic))
-                            response = res.json()['data']
-
+                            response = synthesize_audio(text)
                             audio_url = response['speech_url']
                             duration = response['duration']
 
@@ -292,30 +253,27 @@ class TagFetchHandler(tornado.web.RequestHandler):
                                 }]
                             }
                             logger.info("tag_fetch comment responded", model_name="None")
-
                 else:
                     ret = {
                         "code": "200",
                         "task_list": []
                     }
-                    logger.info("tag_fetch no answerable comment", model_name="None")
+                    logger.info("tag_fetch no answerable comment")
 
                 cursor.close()
                 db.close()
         except Exception as e:
-            print(e)
-            ret = {'code': '400'}
-            logger.error("tag_fetch comment response error", model_name="None", prod_name="430版本数字人评论互动")
+            logger.error(e)
+            logger.error("tag_fetch comment response error")
         resp = json.dumps(ret, ensure_ascii=False)
-        with open('log.txt', 'a') as f:
-            f.write(str(datetime.now()) + '|' + jstr + '|' + resp + '\n')
-        self.write(resp)
+        logger.info("know_fetch_log:"+str(datetime.now()) + '|' + jstr + '|' + resp + '\n')
+        return resp
 
-
-
-def get_app():
-    return tornado.web.Application([(r'/know_send',KnowSendHandler),(r'/know_fetch',KnowFetchHandler),
-                                    (r'/know_get',KnowGetHandler),(r'/know_direct',KnowDirectHandler),
-                                    (r'/know_fetch_room',KnowFetchRoomHandler),(r'/know_open',KnowOpenHandler),
-                                    (r'/tag_fetch',TagFetchHandler)],
-                                   static_path=os.path.join(os.getcwd(), '../static'))
+if __name__ == '__main__':
+    # 启动服务，开启多线程模式
+    app.run(
+        host='0.0.0.0',
+        port=8089,
+        threaded=True,
+        debug=False
+    )

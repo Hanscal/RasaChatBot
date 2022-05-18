@@ -1,7 +1,8 @@
 version: '3.0'
+# 60s重新开始对话，并舍弃上一轮槽值信息false,true为保留
 session_config:
   session_expiration_time: 60
-  carry_over_slots_to_new_session: true
+  carry_over_slots_to_new_session: false
 intents:
   - whoareyou
   - greet
@@ -18,12 +19,8 @@ intents:
   - discount
   - discount_lottery
   - human_service
-  - query_knowledge_base:
-      use_entities: []
-  - query_prod_knowledge_base:
+  - query_prod_knowledge_bae:
       use_entities: [ ]
-  - play_song
-  - play_album
   - affirm
   - deny
   - thanks
@@ -35,13 +32,8 @@ entities:
   - object_type
   - mention
   - attribute
-  - song
   - product
-  - singer
-  - gender
-  - song_object_type
-  - song_mention
-  - song_attribute
+
 slots:
   object_type:
     type: any
@@ -58,26 +50,7 @@ slots:
     mappings:
       - type: from_entity
         entity: attribute
-  song_object_type:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: song_object_type
-  song_mention:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: song_mention
-  song_attribute:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: song_attribute
-  gender:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: gender
+
   knowledge_base_last_object:
     type: any
     mappings:
@@ -94,17 +67,6 @@ slots:
     type: any
     mappings:
       - type: custom
-
-  singer:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: singer
-  song:
-    type: any
-    mappings:
-      - type: from_entity
-        entity: song
   product:
     type: any
     mappings:
@@ -215,7 +177,6 @@ actions:
   - action_discount
   - action_discount_lottery
   - action_human_service
-  - action_response_query
   - action_prod_response_query
   - utter_ask_rephrase
   - utter_answer_affirm
