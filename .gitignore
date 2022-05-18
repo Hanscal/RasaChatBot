@@ -4,5 +4,6 @@ tests
 data_processing
 models
 log
+config
 __pycache__
 */__pycache__
