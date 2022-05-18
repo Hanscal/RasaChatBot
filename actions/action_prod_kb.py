@@ -174,7 +174,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         user_id = tracker.sender_id
         shop_id = user_id.split(':')[0]
         # 在run函数中已经确保一定是在这个shop_list里面
-        object_type_wo_shop = object_type[len(shop_id):]  # 这里有问题，需要将shop name 去除
+        object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
         slots = [
             SlotSet(SLOT_OBJECT_TYPE, object_type_wo_shop),
             SlotSet(SLOT_MENTION, None),
@@ -231,13 +231,13 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         if not object_name or not attribute:
             dispatcher.utter_message(response="utter_ask_rephrase")
-            return [SlotSet(SLOT_MENTION, None)]
+            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         object_of_interest = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, object_name))
 
         if not object_of_interest or attribute not in object_of_interest:
             dispatcher.utter_message(response="utter_ask_rephrase")
-            return [SlotSet(SLOT_MENTION, None)]
+            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         value = object_of_interest[attribute]
 
@@ -304,11 +304,11 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         #     dispatcher.utter_message(response="utter_ask_rephrase")
         #     return []
         if attribute and object_type:
-            return await self._query_attribute(dispatcher, shop_id + '_' + object_type, attribute, tracker)
+            return await self._query_attribute(dispatcher, object_type, attribute, tracker)
         elif not attribute or new_request:
             return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
         elif attribute:
-            return await self._query_attribute(dispatcher, shop_id+'_'+object_type, attribute, tracker)
+            return await self._query_attribute(dispatcher, object_type, attribute, tracker)
 
         dispatcher.utter_message(response="utter_ask_rephrase")
         return []
