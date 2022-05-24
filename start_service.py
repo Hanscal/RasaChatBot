@@ -57,7 +57,7 @@ def live_assistant_api():
             response = '\n'.join([i['text'] for i in response])
     else:
         logger.error("only support post method!")
-    logger.info("response: ", response)
+    logger.info("response: {}".format(response))
     logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":response},ensure_ascii=False)
 
@@ -79,12 +79,13 @@ def nlu_parse_api():
         message_input = data_json['message']
         message_id = str(uuid.uuid5(uuid.NAMESPACE_DNS,message_input))
         response = requestRasabot(url='model/parse', params={'text':message_input, "message_id":message_id}, method='post')
+        response = json.loads(response)
         intent = response.get('intent',{})
         intent_name = intent.get('name',None)
         intent_confidence = intent.get('confidence', None)
+        logger.info("intent name: {}".format(intent_name))
     else:
         logger.error("only support post method!")
-    logger.info("response: ", response)
     logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":{'intent_name':intent_name, 'intent_confidence':intent_confidence}},ensure_ascii=False)
 
@@ -108,7 +109,7 @@ def rasa_parse_api():
         response = requestRasabot(url, params, method)
     else:
         logger.info("only support post method!")
-    logger.info("response: ", response)
+    logger.info("response: {}".format(response))
     logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"response":response},ensure_ascii=False)
 
@@ -136,7 +137,7 @@ def live_assistant_ui():
         answer = eval(answer)
         if answer and isinstance(answer, list):
             answer = '\n'.join([i['text'] for i in answer])
-        logger.info("response: ", answer)
+        logger.info("response: {}".format(answer))
         logger.info('total costs {:.2f}s'.format(time.time() - b0))
         return json.dumps({'answer': answer},ensure_ascii=False)
 
@@ -162,6 +163,7 @@ def login():
     form = LoginForm()
     if request.method == "POST":
         shop_name = request.form["shopname"]
+        user_name = request.form["username"]
         password = request.form["password"]
         user_info = query_user(shop_name)  # 从用户数据中查找用户记录
         if user_info is None:
@@ -171,7 +173,7 @@ def login():
             if user.verify_password(password):  # 校验密码
                 login_user(user)  # 创建用户 Session
                 session['shopname'] = user.shopname
-                session['username'] = user.username
+                session['username'] = user_name
                 return redirect(request.args.get('next') or url_for('live_assistant_ui'))  # request.args.get('next') or
             else:
                 emsg = "用户名或密码密码有误"

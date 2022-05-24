@@ -30,12 +30,15 @@ from rasa_sdk.knowledge_base.utils import (
 )
 
 from neo4j import GraphDatabase
-from py2neo import Graph
 
-shop_list = ['yunjing','planet']
+from config.config import shop_list
+from config.config import EnToZh
+from config.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+
 file_root = os.path.dirname(__file__)
 # default neo4j account should be user="neo4j", password="neo4j"
-graph = Graph(uri="bolt://113.31.111.86:48087", user="neo4j", password="CHneo4j")
+# from py2neo import Graph
+# graph = Graph(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)
 
 class RetrieveProduct(object):
     def __init__(self, shop_name):
@@ -60,56 +63,12 @@ class RetrieveProduct(object):
         return names
 
 
-class EnToZh(object):
-    def __init__(self):
-        self.data = {
-            "product": "产品",
-            "name": "产品名",
-            "intro": "介绍",
-            "price": "原价",
-            "arrive_price": "优惠价",
-            "specification": "规格",
-            "ingredient": "成分",
-            "smell": "气味",
-            "effect": "功效",
-            "people": "适用人群",
-            "expiration": "保质期",
-            "package": "包装",
-            "place": "生产地",
-            "brand": "品牌"
-        }
-
-    def update(self, shop_name=''):
-        if shop_name == 'planet':
-            self.data.update({
-                "planet_product": "地球主义产品",
-                "smell":"气味",
-                "氨基酸保湿护发洗发水": "氨基酸保湿护发洗发水(1号链接)",
-                "防脱固发洗发水": "防脱固发洗发水(2号链接)",
-                "丝润双萃分层喷雾": "丝润双萃分层喷雾(3号链接)",
-                "柔润闪耀鎏沙精华液": "柔润闪耀鎏沙精华液(4号链接)"
-                         })
-        elif shop_name == 'yunjing':
-            self.data.update({
-                "yunjing_product":"云景主义产品",
-                "people_not": "不适用人群",
-                "place_intro":"产地介绍",
-                "prod_eat":"食用方法",
-                "prod_intro":"产品介绍",
-                "prod_nurture":"产品培养",
-                "景芝一号破壁灵芝孢子粉": "景芝一号破壁灵芝孢子粉(1号链接)"
-            })
-
-    def __call__(self, key):
-        return self.data.get(key, key)
-
-
 class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def name(self) -> Text:
         return "action_prod_response_query"
 
     def __init__(self):
-        knowledge_base = Neo4jKnowledgeBase(uri="bolt://113.31.111.86:48087", user="neo4j", password="CHneo4j")  # 根据情况修改
+        knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
         super().__init__(knowledge_base)
         self.en_to_zh = EnToZh()
 
@@ -575,7 +534,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
 if __name__ == '__main__':
     import asyncio
 
-    kb = Neo4jKnowledgeBase(uri="bolt://113.31.111.86:48087", user="neo4j", password="CHneo4j")  # 测试代码，根据情况修改
+    kb = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 测试代码，根据情况修改
     loop = asyncio.get_event_loop()
 
     result = loop.run_until_complete(kb.get_objects("planet", [], 5))

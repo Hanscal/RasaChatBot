@@ -45,9 +45,12 @@ def get_personality(nickname):
     return text_list
 
 def get_nlu_theme(text):
-    # 定时轮询数据库中数据，返回分类结果
+    """定时轮询数据库中数据，返回分类结果"""
     url = "http://113.31.111.86:48088/nlu_parse_api"
     dic = {"message": text}
     res = requests.post(url, data=json.dumps(dic))
     result_dic = res.json()
     return result_dic
+
+if __name__ == '__main__':
+    res = get_nlu_theme('你好')
