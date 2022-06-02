@@ -43,7 +43,7 @@ class ChitChatKnowledge(object):
                     res.append(k)
             if res:
                 res_key = random.choice(res)
-                res_list = self.chitchat_response['utter_answer_greet'].get(res_key, [])
+                res_list = self.chitchat_response['utter_greet'].get(res_key, [])
                 res_final = random.choice(res_list) if res_list else None
 
         except Exception as e:
@@ -69,7 +69,7 @@ class ActionAnswerGreet(Action):
     of the dialogue"""
 
     def name(self):
-        return 'action_answer_greet'
+        return 'action_greet'
 
     def run(self,
             dispatcher: CollectingDispatcher,
@@ -84,7 +84,7 @@ class ActionAnswerGreet(Action):
         if message is not None and random.randint(1,10) < 9: # 设定80的概率
             dispatcher.utter_message(message)
         else:
-            dispatcher.utter_message(response='utter_answer_greet')
+            dispatcher.utter_message(response='utter_greet')
         return [UserUtteranceReverted()]
 
 class ActionDefaultFallback(Action):
@@ -113,7 +113,7 @@ class ActionDefaultFallback(Action):
         if message is not None:
             dispatcher.utter_message(message)
         else:
-            dispatcher.utter_template('utter_ask_rephrase', tracker, silent_fail=True)
+            dispatcher.utter_template('utter_rephrase', tracker, silent_fail=True)
         return [UserUtteranceReverted()]
 
 

@@ -65,7 +65,7 @@ class RetrieveProduct(object):
 
 class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def name(self) -> Text:
-        return "action_prod_response_query"
+        return "action_query_prod_knowledge_base"
 
     def __init__(self):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
@@ -189,13 +189,13 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
 
         if not object_name or not attribute:
-            dispatcher.utter_message(response="utter_ask_rephrase")
+            dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         object_of_interest = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, object_name))
 
         if not object_of_interest or attribute not in object_of_interest:
-            dispatcher.utter_message(response="utter_ask_rephrase")
+            dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         value = object_of_interest[attribute]
