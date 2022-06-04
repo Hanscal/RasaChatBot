@@ -2,6 +2,7 @@ recipe: default.v1
 
 language: zh
 pipeline:
+# components.tokenizer.MicroTokenizer
   - name: JiebaTokenizer
     dictionary_path: "data/dict"
   - name: LanguageModelFeaturizer

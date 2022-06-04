@@ -100,24 +100,24 @@ class DataGenerator(object):
             if 'faq/' in i['intent']:
                 faq_value = OrderedDict()
                 faq_value['intent'] = i['intent']
-                faq_value['examples'] = '\n'+'\n'.join(['- '+ item.strip('\n ​') for item in i['examples']])
+                faq_value['examples'] = '\n'.join(['- '+ item.replace(' ','').replace('-','').strip('\n ​') for item in i['examples']])
                 faq['nlu'].append(faq_value)
             elif 'query_prod_knowledge_base' in i['intent']:
                 prod_value = OrderedDict()
                 prod_value['intent'] = i['intent']
-                prod_value['examples'] = '\n'+'\n'.join(['- '+ item.strip('\n ​') for item in i['examples']])
+                prod_value['examples'] = '\n'.join(['- '+ item.replace(' ','').replace('-','').strip('\n ​') for item in i['examples']])
                 prod['nlu'].append(prod_value)
                 for attr in i['synonym']:
                     if 'list_product' == attr['attribute']:
                         continue
                     attr_value = OrderedDict()
                     attr_value['synonym'] = attr['attribute']
-                    attr_value['examples'] = '\n'+'\n'.join(['- '+ item.strip('\n ​') for item in attr['examples']])
+                    attr_value['examples'] = '\n'.join(['- '+ item.replace(' ','').replace('-','').strip('\n ​') for item in attr['examples']])
                     prod['synonym'].append(attr_value)
             else:
                 intent_value = OrderedDict()
                 intent_value['intent'] = i['intent']
-                intent_value['examples'] = '\n'+'\n'.join(['- '+ item.strip('\n ​') for item in i['examples']])
+                intent_value['examples'] = '\n'.join(['- '+ item.replace(' ','').replace('-','').strip('\n ​') for item in i['examples']])
                 other['nlu'].append(intent_value)
 
         faq_path = os.path.join(savedir, shop_name+"_faq_nlu.yml")
@@ -195,14 +195,16 @@ class DataGenerator(object):
                 continue
             story_value = OrderedDict()
             story_value['story'] = 'say '+intent
-            step_value = OrderedDict()
+            step_value = []
             # 部分action会复写相应的utter方法
             if "action_"+intent in action_dict['actions']:
-                step_value['intent'] = intent
-                step_value['action'] = "action_"+intent
+                step_value.append({"intent":intent})
+                step_value.append({'action':"action_"+intent})
             else:
-                step_value['intent'] = intent
-                step_value['action'] = "utter_" + intent
+                # step_value['intent'] = intent
+                # step_value['action'] = "utter_" + intent
+                step_value.append({"intent": intent})
+                step_value.append({'action': "utter_" + intent})
             story_value['steps'] = step_value
             story['stories'].append(story_value)
         story_path = os.path.join(savedir, shop_name + "_stories.yml")
