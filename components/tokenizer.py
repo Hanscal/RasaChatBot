@@ -35,9 +35,7 @@ from rasa.shared.nlu.constants import (
 logger = logging.getLogger(__name__)
 
 
-@DefaultV1Recipe.register(
-    DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=True
-)
+@DefaultV1Recipe.register(DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=True)
 class MicroTokenizer(Tokenizer):
     provides = ["tokens"]
 
@@ -436,6 +434,7 @@ class BasicTokenizer(object):
       return False
 
 
+@DefaultV1Recipe.register(DefaultV1Recipe.ComponentType.MESSAGE_TOKENIZER, is_trainable=True)
 class MyBertTokenizer(Tokenizer):
     # bert实现分词功能，不加wordpiece分词
     provides = ["tokens"]
