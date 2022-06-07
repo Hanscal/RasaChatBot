@@ -98,18 +98,18 @@ class MicroTokenizer(Tokenizer):
             cls._load_custom_dictionary(dictionary_path)
         return cls(config, model_storage, resource)
 
-    @staticmethod
-    def _load_custom_dictionary(path: Text) -> None:
-        import MicroTokenizer
+    # @staticmethod
+    # def _load_custom_dictionary(path: Text) -> None:
+    #     import MicroTokenizer
+    #
+    #     userdicts = glob.glob(f"{path}/*")
+    #     for userdict in userdicts:
+    #         logger.info(f"Loading MicroTokenizer User Dictionary at {userdict}")
+    #         MicroTokenizer.load_userdict(userdict)
 
-        userdicts = glob.glob(f"{path}/*")
-        for userdict in userdicts:
-            logger.info(f"Loading MicroTokenizer User Dictionary at {userdict}")
-            MicroTokenizer.load_userdict(userdict)
-
-    @classmethod
-    def required_packages(cls) -> List[Text]:
-        return ["MicroTokenizer"]
+    # @classmethod
+    # def required_packages(cls) -> List[Text]:
+    #     return ["MicroTokenizer"]
 
     def train(self, training_data: TrainingData) -> Resource:
         """Copies the dictionary to the model storage."""
@@ -117,7 +117,7 @@ class MicroTokenizer(Tokenizer):
         return self._resource
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
-        import MicroTokenizer
+        # import MicroTokenizer
 
         text = message.get(attribute)
         # import pdb;pdb.set_trace()
@@ -557,5 +557,5 @@ class MyBertTokenizer(Tokenizer):
 
 if __name__ == '__main__':
     bt = BasicTokenizer()
-    res = bt.tokenize("beijing是中国的首都，keras是一款好用的产品")
+    res = bt.tokenize("beijing shanghai是中国的首都，keras是一款好用的产品")
     print(res)

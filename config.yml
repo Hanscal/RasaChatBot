@@ -2,7 +2,7 @@ recipe: default.v1
 
 language: zh
 pipeline:
-# components.tokenizer.MicroTokenizer
+# components.tokenizer.MicroTokenizer, components.tokenizer.MyBertTokenizer
   - name: components.tokenizer.MicroTokenizer
     dictionary_path: "data/dict"
   - name: LanguageModelFeaturizer
