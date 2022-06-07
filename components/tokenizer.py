@@ -96,14 +96,15 @@ class MicroTokenizer(Tokenizer):
             cls._load_custom_dictionary(dictionary_path)
         return cls(config, model_storage, resource)
 
-    # @staticmethod
-    # def _load_custom_dictionary(path: Text) -> None:
-    #     import MicroTokenizer
-    #
-    #     userdicts = glob.glob(f"{path}/*")
-    #     for userdict in userdicts:
-    #         logger.info(f"Loading MicroTokenizer User Dictionary at {userdict}")
-    #         MicroTokenizer.load_userdict(userdict)
+    @staticmethod
+    def _load_custom_dictionary(path: Text) -> None:
+        # import MicroTokenizer
+        #
+        # userdicts = glob.glob(f"{path}/*")
+        # for userdict in userdicts:
+        #     logger.info(f"Loading MicroTokenizer User Dictionary at {userdict}")
+        #     MicroTokenizer.load_userdict(userdict)
+        logger.info(f"do not Loading MicroTokenizer User Dictionary at {path}")
 
     # @classmethod
     # def required_packages(cls) -> List[Text]:
