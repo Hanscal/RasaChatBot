@@ -27,9 +27,9 @@ def requestRasabotServer(userid, content):
 
 def requestRasabot(url, params, method='post'):
     """
-        访问rasa服务
+        访问rasa服务，所有服务都可以从这个接口进入，请求参数不同
     :param url: 相对路由
-    :param content: params是请求参数
+    :param params: 请求参数
     :param method: 请求方式
     :return:  json格式响应数据
     """

@@ -6,7 +6,9 @@
 @Email   : hua.cai@unidt.com
 """
 import os
+import sys
 import yaml
+sys.path.append('.')
 from scripts.mysql_opt import LiveDB
 from config.config import inherit_tag_path, action_list_path
 from collections import OrderedDict
@@ -46,6 +48,12 @@ class DataGenerator(object):
         self.nlu_dir = os.path.join(os.path.dirname(__file__), '../data/nlu/')
         self.response_dir = os.path.join(os.path.dirname(__file__), '../data/responses/')
         self.story_dir = os.path.join(os.path.dirname(__file__), '../data/stories/')
+        if not os.path.exists(self.nlu_dir):
+            os.makedirs(self.nlu_dir)
+        if not os.path.exists(self.response_dir):
+            os.makedirs(self.response_dir)
+        if not os.path.exists(self.story_dir):
+            os.makedirs(self.story_dir)
 
     def clear_yml(self, datadir_list, tags=['nlu.yml', 'responses.yml', 'stories.yml']):
         """
