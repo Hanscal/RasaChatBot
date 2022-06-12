@@ -1,9 +1,10 @@
 .idea
 .rasa
 tests
-data_processing
+data
 models
 log
 config
+*_domain.yml
 __pycache__
 */__pycache__
