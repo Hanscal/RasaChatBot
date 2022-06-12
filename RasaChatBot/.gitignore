@@ -1,0 +1,12 @@
+.idea
+.rasa
+tests
+data
+models
+log
+config
+*_domain.yml
+__pycache__
+*/__pycache__
+.DS_Store
+*/.idea
