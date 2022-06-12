@@ -1,10 +1,10 @@
 .idea
-.rasa
-tests
-data
+./.idea
+RasaChatBot/.rasa
+RasaChatBot/tests
+data_processing
 models
 log
 config
-*_domain.yml
 __pycache__
 */__pycache__

@@ -1,0 +1,56 @@
+version: '3.0'
+
+services:
+  dialogue_server:
+    build:
+      context: .
+      dockerfile: docker.Dockerfile
+    networks: [ 'rasa-network' ]
+    ports:
+      - 8088:8088
+
+  rasa:
+    image: rasa/rasa:3.0.4-full
+    networks: ['rasa-network']
+    ports:
+    - 5005:5005
+    volumes:
+    - ./RasaChatBot/:/app/
+    environment:
+      MPLCONFIGDIR: "/tmp/"
+      SANIC_WORKERS: 1
+    command:
+    - run
+    - --enable-api
+    - --cors
+    - "*"
+
+  action_server:
+    build:
+      context: .
+      dockerfile: RasaChatBot.actions.Dockerfile
+    image: my-rasa-sdk:3.0.4
+    networks: ['rasa-network']
+    ports:
+    - 5055:5055
+    volumes:
+      - ./RasaChatBot/actions:/app/actions
+    environment:
+      ACTION_SERVER_SANIC_WORKERS: 1
+
+  neo4j:
+    image: neo4j:latest
+    networks: [ 'rasa-network' ]
+    volumes:
+      - /data/caihua/neo4j/data:/data
+    ports:
+      - 7474:7474
+      - 7687:7687
+
+  redis:
+    image: redis:6.2.5
+    networks: [ 'rasa-network' ]
+    ports:
+      - 6379:6379
+
+networks: {rasa-network: {}}
