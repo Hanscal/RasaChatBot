@@ -111,29 +111,3 @@ JWT身份验证:
 --jwt-method JWT_METHOD
                 用于JWT的认证负载签名的方法。(默认：HS256)
 ``` 
-
-## 学习资料
-1. [官方文档](https://rasa.com/blog/what-s-ahead-in-rasa-open-source-3-0/)
-2. [YouTube官方视频](https://www.youtube.com/channel/UCJ0V6493mLvqdiVwOKWBODQ)
-3. [快速入门讲解英文](https://www.youtube.com/watch?v=PfYBXidENlg)
-4. [快速入门项目中文](https://github.com/Chinese-NLP-book/rasa_chinese_book_code)
-
-
-## 下一步工作 
-### Entity
-1. 对于明确的实体进行定义，并且作出有针对性的回答。
- 
-### Action
-1. 进行数据校验, 和数据交互，采用MySQL存储FQA数据，通过接口实现功能分离；  
-2. 与数据库(Neo4j)进行交互，更多的实体和关系属性定义. 
-
-### Tokenizer
-1. 自定义分词器，实现实体边界的覆盖；
-
-### Interactive Learning
-1. 交互式学习，提供反馈并修正错误；
-2. RASA-X 1.1进行集成；
-
-### Deploy
-1. 模型部署与负载均衡；
-2. 服务访问方式。
