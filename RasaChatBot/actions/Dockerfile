@@ -3,7 +3,7 @@ FROM rasa/rasa-sdk:3.0.4
 # maintainer info
 MAINTAINER caihua "hua.cai@unidt.com"
 
-RUN apt-get update && apt-get install -y python3.8 python3-pip libgl1-mesa-glx vim
+RUN apt-get update && apt-get install -y python3.8 python3-pip vim
 
 # 指定工作路径
 WORKDIR /app
