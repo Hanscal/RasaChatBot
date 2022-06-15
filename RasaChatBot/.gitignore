@@ -2,6 +2,8 @@
 .rasa
 tests
 data
+actions/kb
+actions/action_config.py
 models
 log
 config

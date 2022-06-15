@@ -8,6 +8,7 @@
 import os
 import sys
 import yaml
+import shutil
 sys.path.append('.')
 from scripts.mysql_opt import LiveDB
 from config.config import inherit_tag_path, action_list_path
@@ -45,6 +46,7 @@ def read_yaml_to_ordered_dict(yaml_path, Loader=yaml.Loader, object_pairs_hook=O
 
 class DataGenerator(object):
     def __init__(self):
+        self.config_dir = os.path.join(os.path.dirname(__file__), '../RasaChatBot/actions/')
         self.nlu_dir = os.path.join(os.path.dirname(__file__), '../RasaChatBot/data/nlu/')
         self.response_dir = os.path.join(os.path.dirname(__file__), '../RasaChatBot/data/responses/')
         self.story_dir = os.path.join(os.path.dirname(__file__), '../RasaChatBot/data/stories/')
@@ -70,6 +72,13 @@ class DataGenerator(object):
                     os.remove(file_path)
                     res.append(file_path)
         return res
+
+    def copy_config(self):
+        """
+        :param savedir: 保存的目录
+        """
+        shutil.copyfile(os.path.join(os.path.dirname(__file__), '../config/action_config.py'), os.path.join(self.config_dir, 'action_config.py'))
+
 
     def generate_nlu_data(self, savedir, shop_name):
         """
@@ -251,20 +260,23 @@ class DataGenerator(object):
         domain_path = os.path.join(savedir, shop_name + "_domain.yml")
         save_ordered_dict_to_yaml(domain, domain_path)
 
-    def generate(self, shop_name):
+    def generate(self, shop_name_list:list):
         # 清除对应的yaml文件
         ymls = self.clear_yml(datadir_list=[self.nlu_dir, self.response_dir, self.story_dir])
-        # # 生成nlu训练数据
-        res = self.generate_nlu_data(savedir=self.nlu_dir, shop_name=shop_name)
-        # # 生成response文件
-        self.generate_response_data(savedir=self.response_dir, shop_name=shop_name)
-        self.generate_stories(res, savedir=self.story_dir, shop_name=shop_name)
-        self.generate_domain(res, savedir=os.path.join(os.path.dirname(__file__), '../RasaChatBot/'), shop_name=shop_name)
+        # 将action_config copy到RasaChatbot文件夹下
+        self.copy_config()
+        for shop_name in shop_name_list:
+            # # 生成nlu训练数据
+            res = self.generate_nlu_data(savedir=self.nlu_dir, shop_name=shop_name)
+            # # 生成response文件
+            self.generate_response_data(savedir=self.response_dir, shop_name=shop_name)
+            self.generate_stories(res, savedir=self.story_dir, shop_name=shop_name)
+            self.generate_domain(res, savedir=os.path.join(os.path.dirname(__file__), '../RasaChatBot/'), shop_name=shop_name)
 
 if __name__ == '__main__':
     # 读取yml文件
     # file_path = os.path.join(os.path.dirname(__file__),'../data/nlu/chitchat_base_nlu.yml')
     # read_yaml_to_ordered_dict(file_path)
     dg = DataGenerator()
-    dg.generate('planet')
+    dg.generate(['planet'])
 

@@ -30,10 +30,11 @@ from rasa_sdk.knowledge_base.utils import (
 )
 
 from neo4j import GraphDatabase
-
-from config.config import shop_list
-from config.config import EnToZh
-from config.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+import sys
+sys.path.append('.')
+from .action_config import shop_list
+from .action_config import EnToZh
+from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
 file_root = os.path.dirname(__file__)
 # default neo4j account should be user="neo4j", password="neo4j"

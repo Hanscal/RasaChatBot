@@ -23,8 +23,8 @@ file_root = os.path.dirname(__file__)
 
 class ChitChatKnowledge(object):
     def __init__(self):
-        self.chitchat_response = json.load(open(os.path.join(file_root, '../data/kb/chitchat_response.json'),mode='r'))
-        self.jokes = json.load(open(os.path.join(file_root, '../data/kb/jokes.json'),mode='r'))
+        self.chitchat_response = json.load(open(os.path.join(file_root, 'kb/chitchat_response.json'), mode='r'))
+        self.jokes = json.load(open(os.path.join(file_root, 'kb/jokes.json'), mode='r'))
 
     def get_personality(self, nickname):
         """

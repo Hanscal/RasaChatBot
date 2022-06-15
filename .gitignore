@@ -2,6 +2,7 @@
 ./.idea
 RasaChatBot/.rasa
 RasaChatBot/tests
+RasaChatBot/bert-base-chinese
 data_processing
 models
 log
