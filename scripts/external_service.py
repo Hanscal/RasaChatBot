@@ -35,22 +35,26 @@ def get_personality(nickname):
     url = "http://113.31.111.86:19068/personality"
     dic = {"nickname": nickname}
     res = requests.post(url, data=json.dumps(dic))
-    result_dic = res.json()
+    try:
+        result_dic = res.json()
 
-    if result_dic['msg'] == 'success':
-        personality = result_dic['result']
-        for key in personality.keys():
-            if abs(personality[key]) == 1:
-                text_list.extend(text_dic[key])
+        if result_dic['msg'] == 'success':
+            personality = result_dic['result']
+            for key in personality.keys():
+                if abs(personality[key]) == 1:
+                    text_list.extend(text_dic[key])
+    except Exception as e:
+        print("get personality error!", e)
     return text_list
 
 def get_nlu_theme(text):
     """定时轮询数据库中数据，返回分类结果"""
-    url = "http://113.31.111.86:48088/nlu_parse_api"
+    url = "http://113.31.111.86:48089/nlu_parse_api"
     dic = {"message": text}
     res = requests.post(url, data=json.dumps(dic))
     result_dic = res.json()
     return result_dic
 
 if __name__ == '__main__':
-    res = get_nlu_theme('你好')
+    print(get_personality('hanscal'))
+    print(get_nlu_theme('你好'))

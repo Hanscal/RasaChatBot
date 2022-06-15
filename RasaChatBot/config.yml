@@ -8,6 +8,7 @@ pipeline:
   - name: LanguageModelFeaturizer
     model_name: bert
     model_weights: bert-base-chinese
+    cache_dir: "bert-base-chinese"
   - name: DIETClassifier
     epoches: 100
     tensorboard_log_directory: ./log

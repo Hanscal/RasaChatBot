@@ -1,4 +1,4 @@
-FROM hanscal/py3.8
+FROM hanscal/py3.8:base
 
 # maintainer info
 MAINTAINER caihua "hua.cai@unidt.com"
@@ -11,6 +11,7 @@ WORKDIR /root/RasaChatBot
 # Copy the current directory contents into the container at /article_search
 COPY / .
 
+USER root
 # Install any needed packages specified in requirements.txt
 COPY ./docker/requirements-web.txt ./
 RUN pip3 install --upgrade pip -i http://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com
@@ -22,7 +23,7 @@ RUN pip3 install -r requirements-web.txt -i http://mirrors.aliyun.com/pypi/simpl
 #RUN apt-get update \
 #    && apt-get install -y locales \
 #    && locale-gen zh_CN.UTF-8 \
-#    && update-locale LANG=zh_CN.UTF-8 LANGUAGE=zh_CN.UTF-8 LC_ALL=zh_CN.UTF-8
+#    && update-locale LANG=zh_CN.UTF-8 LANGUAGE=zh_CN.UTF-8 LC_ALL=zh_CN.UTF-8 \
 #    && apt-get install tzdata \
 #    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 #    && dpkg-reconfigure --frontend noninteractive tzdata
@@ -40,4 +41,4 @@ RUN pip3 install -r requirements-web.txt -i http://mirrors.aliyun.com/pypi/simpl
 EXPOSE 8088
 
 # Run app.py when the container launche
-# CMD ["python", "article_search_service.py"]
+CMD ["python", "start_service.py"]

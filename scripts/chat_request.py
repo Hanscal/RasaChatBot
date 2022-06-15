@@ -19,7 +19,7 @@ def requestRasabotServer(userid, content):
     # rasa使用rest channel
     # https://rasa.com/docs/rasa/user-guide/connectors/your-own-website/#rest-channels
     # POST /webhooks/rest/webhook
-    rasaUrl = "http://{0}:{1}/webhooks/rest/webhook".format('0.0.0.0', '5005')
+    rasaUrl = "http://{0}:{1}/webhooks/rest/webhook".format('rasa_server', '5005')
 
     response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
     response = response.text.encode('utf-8').decode("unicode-escape")
@@ -33,7 +33,7 @@ def requestRasabot(url, params, method='post'):
     :param method: 请求方式
     :return:  json格式响应数据
     """
-    rasaUrl = "http://{0}:{1}/{2}".format('0.0.0.0', '5005', url)
+    rasaUrl = "http://{0}:{1}/{2}".format('rasa_server', '5005', url)
     response = ''
     if method == 'post':
         response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})

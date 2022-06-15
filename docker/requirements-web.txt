@@ -1,4 +1,6 @@
-flask
-flask_wtf
-flask_login
+Flask
+Flask-WTF
+Flask-Login
+Flask-Cors
 pymysql
+requests==2.25.1

@@ -3,36 +3,47 @@ version: '3.0'
 services:
   dialogue_server:
     build:
-      context: .
-      dockerfile: docker.Dockerfile
+      context: ./
+      dockerfile: docker/Dockerfile
+    image: rasachatbot_dialogue_server:latest
+    container_name: rasachatbot_dialogue_server
+    depends_on:
+      - rasa_server
     networks: [ 'rasa-network' ]
     ports:
-      - 8088:8088
-
-  rasa:
-    image: rasa/rasa:3.0.4-full
-    networks: ['rasa-network']
-    ports:
-    - 5005:5005
+      - 8089:8088
     volumes:
-    - ./RasaChatBot/:/app/
+      - ./:/root/RasaChatBot
+    links:
+      - rasa_server
+
+  rasa_server:
+    build:
+      context: ./
+      dockerfile: RasaChatBot/Dockerfile
+    image: rasachatbot_rasa:3.0.4
+    networks: [ 'rasa-network' ]
+    container_name: rasachatbot_rasa_server
+    ports:
+      - 5006:5005
+    volumes:
+      - ./RasaChatBot/:/app/
     environment:
       MPLCONFIGDIR: "/tmp/"
       SANIC_WORKERS: 1
-    command:
-    - run
-    - --enable-api
-    - --cors
-    - "*"
+    links:
+      - action_server
+      - redis
 
   action_server:
     build:
-      context: .
-      dockerfile: RasaChatBot.actions.Dockerfile
-    image: my-rasa-sdk:3.0.4
-    networks: ['rasa-network']
+      context: ./
+      dockerfile: RasaChatBot/actions/Dockerfile
+    image: rasachatbot_rasa_sdk:3.0.4
+    container_name: rasachatbot_action_server
+    networks: [ 'rasa-network' ]
     ports:
-    - 5055:5055
+      - 5056:5055
     volumes:
       - ./RasaChatBot/actions:/app/actions
     environment:
@@ -41,16 +52,18 @@ services:
   neo4j:
     image: neo4j:latest
     networks: [ 'rasa-network' ]
+    container_name: rasachatbot_neo4j
     volumes:
       - /data/caihua/neo4j/data:/data
     ports:
-      - 7474:7474
-      - 7687:7687
+      - 8075:7474
+      - 8077:7687
 
   redis:
     image: redis:6.2.5
     networks: [ 'rasa-network' ]
+    container_name: rasachatbot_redis
     ports:
-      - 6379:6379
+      - 6380:6379
 
 networks: {rasa-network: {}}
