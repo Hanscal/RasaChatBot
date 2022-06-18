@@ -45,6 +45,9 @@ def live_assistant_api():
     """
     b0 = time.time()
     response = ''
+    intent_name = None
+    intent_confidence = None
+    entities = []
     if request.method == 'POST':
         data_json = request.get_json(force=True)
         message_input = data_json['message']
@@ -52,14 +55,28 @@ def live_assistant_api():
         shop_name = data_json.get('shop_name','')
         input_name = shop_name+':'+user_name
         response = requestRasabotServer(input_name, message_input)
-        response = eval(response)
+        try:
+            response = eval(response)
+        except Exception as e:
+            logger.info("can't eval response:{}, {}".format(response,e))
         if response and isinstance(response, list):
             response = '\n'.join([i['text'] for i in response])
+        message_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, message_input))
+        nlu_response = requestRasabot(url='model/parse', params={'text': message_input, "message_id": message_id}, method='post')
+        nlu_response = json.loads(nlu_response)
+        intent = nlu_response.get('intent', {})
+        intent_name = intent.get('name', None)
+        if intent_name == 'faq':
+            intent_name = nlu_response.get('response_selector', {}).get("default",{}).get("response",{}).get("intent_response_key", 'faq')
+        intent_confidence = intent.get('confidence', None)
+        logger.info("intent name: {}".format(intent_name))
+        entity_tmp = nlu_response.get('entities', [])
+        entities = [{"name":ent['entity'], "value":ent['value'], "confidence":ent['confidence_entity']} for ent in entity_tmp]
     else:
         logger.error("only support post method!")
     logger.info("response: {}".format(response))
     logger.info('total costs {:.2f}s'.format(time.time() - b0))
-    return json.dumps({"response":response},ensure_ascii=False)
+    return json.dumps({"response":response, "intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities},ensure_ascii=False)
 
 
 @app.route('/nlu_parse_api', methods=['POST'])
@@ -72,22 +89,17 @@ def nlu_parse_api():
     :return: response rasa响应数据
     """
     b0 = time.time()
-    intent_name = None
-    intent_confidence = None
+    response = {}
     if request.method == 'POST':
         data_json = request.get_json(force=True)
         message_input = data_json['message']
         message_id = str(uuid.uuid5(uuid.NAMESPACE_DNS,message_input))
         response = requestRasabot(url='model/parse', params={'text':message_input, "message_id":message_id}, method='post')
         response = json.loads(response)
-        intent = response.get('intent',{})
-        intent_name = intent.get('name',None)
-        intent_confidence = intent.get('confidence', None)
-        logger.info("intent name: {}".format(intent_name))
     else:
         logger.error("only support post method!")
     logger.info('total costs {:.2f}s'.format(time.time() - b0))
-    return json.dumps({"response":{'intent_name':intent_name, 'intent_confidence':intent_confidence}},ensure_ascii=False)
+    return json.dumps({"response":response},ensure_ascii=False)
 
 
 @app.route('/rasa_parse_api', methods=['POST'])

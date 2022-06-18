@@ -8,6 +8,7 @@
 
 import os
 import re
+import logging
 from collections import defaultdict
 from typing import Text, Dict, Any, List
 from rasa_sdk import utils
@@ -187,18 +188,20 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         Returns: list of slots
         """
         # import pdb;pdb.set_trace()
+        # logging.info('mapping, mention {}, {}'.format(self.knowledge_base.ordinal_mention_mapping, self.use_last_object_mention))
         object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
-
+        logging.info("object_name, attribute: {},{}".format(object_name, attribute))
         if not object_name or not attribute:
             dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
+        # logging.info("slots {}".format(tracker.slots))
         object_of_interest = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, object_name))
-
+        # logging.info("objects interest {}".format(object_of_interest))
         if not object_of_interest or attribute not in object_of_interest:
             dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
-
+        # logging.info("{} {}".format(object_of_interest, attribute))
         value = object_of_interest[attribute]
 
         object_repr_func = await utils.call_potential_coroutine(self.knowledge_base.get_representation_function_of_object(object_type))
@@ -211,12 +214,16 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         await utils.call_potential_coroutine(self.utter_attribute_value(dispatcher, object_representation, attribute, value))
 
+        user_id = tracker.sender_id
+        shop_id = user_id.split(':')[0]
+        # 在run函数中已经确保一定是在这个shop_list里面
+        object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
         slots = [
-            SlotSet(SLOT_OBJECT_TYPE, object_type),
+            SlotSet(SLOT_OBJECT_TYPE, object_type_wo_shop),
             SlotSet(SLOT_ATTRIBUTE, None),
             SlotSet(SLOT_MENTION, None),
             SlotSet(SLOT_LAST_OBJECT, object_identifier),
-            SlotSet(SLOT_LAST_OBJECT_TYPE, object_type),
+            SlotSet(SLOT_LAST_OBJECT_TYPE, object_type_wo_shop),
         ]
 
         return slots
@@ -250,6 +257,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         shop_id = user_id.split(':')[0]
         if shop_id not in shop_list:
             print('请检查直播商店名是否正确')
+            logging.info('请检查直播商店名是否正确')
             dispatcher.utter_message(response="utter_ask_rephrase")
             return []
 
@@ -263,12 +271,14 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         #     # knowledge base
         #     dispatcher.utter_message(response="utter_ask_rephrase")
         #     return []
+        print("product action",object_type, attribute)
+        logging.info("product， attribute： {} {}".format(object_type, attribute))
         if attribute and object_type:
-            return await self._query_attribute(dispatcher, object_type, attribute, tracker)
+            return await self._query_attribute(dispatcher, shop_id+'_'+object_type, attribute, tracker)
         elif not attribute or new_request:
             return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
         elif attribute:
-            return await self._query_attribute(dispatcher, object_type, attribute, tracker)
+            return await self._query_attribute(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product
 
         dispatcher.utter_message(response="utter_ask_rephrase")
         return []
@@ -319,6 +329,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
     def _do_get_attributes_of_object(self, tx, object_type) -> List[Text]:
         query = "MATCH (o:{object_type}) RETURN o LIMIT 1".format(object_type=object_type)
         print(query)
+        logging.info(query)
         result = tx.run(query,)
 
         record = result.single()
@@ -378,6 +389,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         limit: int,
     ):
         print("<_do_get_objects>: ", object_type, attributions, relations, limit)
+        logging.info("<_do_get_objects>: {} {} {} {}".format(object_type, attributions, relations, limit))
         if not relations:
             # attr only, simple case
             query = "MATCH (o:{object_type} {attrs}) RETURN o LIMIT {limit}".format(
@@ -386,6 +398,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
                 limit=limit,
             )
             print(query)
+            logging.info(query)
             result = tx.run(query,)
 
             return [dict(record["o"].items()) for record in result]
@@ -407,6 +420,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
             query = (basic_query + " " + where_clause + " RETURN o LIMIT {}".format(limit))
 
             print(query)
+            logging.info(query)
             result = tx.run(query,)
 
             return [dict(record["o"].items()) for record in result]
@@ -421,6 +435,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         relation: Dict[Text, Text],
     ):
         print("<_do_get_object>: ", object_type, object_identifier, key_attribute, representation_attribute, relation)
+        logging.info("<_do_get_object>: {}, {}, {}, {}, {}".format(object_type, object_identifier, key_attribute, representation_attribute, relation))
         # preprocess attr value
         # if isinstance(object_identifier,str) and object_identifier.isdigit():
         #     object_identifier = int(object_identifier)
@@ -433,6 +448,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
             object_type=object_type, key=key_attribute, value=object_identifier
         )
         print(query)
+        logging.info(query)
         result = tx.run(query,)
         record = result.single()
         if record:
@@ -446,6 +462,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
                 value=object_identifier,
             )
             print(query)
+            logging.info(query)
             result = tx.run(query,)
             record = result.single()
             if record:
@@ -462,6 +479,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         for k, v in relation.items():
             query = "MATCH (o)-[:{}]->(t) WHERE ID(o)={} RETURN t.name".format(v, oid)
             print(query)
+            logging.info(query)
             result = tx.run(query)
             record = result.single()
             if record:
@@ -486,7 +504,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         Returns: list of objects
         """
         print("get_objects", object_type, attributes, limit)
-
+        logging.info("get_objects type:{}, attr:{}, limit:{}".format(object_type, attributes, limit))
         # convert attributes to dict
         attrs = {}
         for a in attributes:
@@ -522,7 +540,7 @@ class Neo4jKnowledgeBase(KnowledgeBase):
         """
         # transformer for query
         object_type = object_type.capitalize()
-
+        logging.info("get object -> object type: {}".format(object_type))
         result = self.do_get_object(
             object_type,
             object_identifier,
@@ -538,33 +556,33 @@ if __name__ == '__main__':
     kb = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 测试代码，根据情况修改
     loop = asyncio.get_event_loop()
 
-    result = loop.run_until_complete(kb.get_objects("planet", [], 5))
+    result = loop.run_until_complete(kb.get_objects("Planet_product", [], 5))
     print(result)
 
     result = loop.run_until_complete(
-        kb.get_objects("planet", [{"name": "name", "value": "防脱固发洗发水"}], 5)
+        kb.get_objects("Planet_product", [{"name": "name", "value": "防脱固发洗发水"}], 5)
     )
     print(result)
 
     result = loop.run_until_complete(
         kb.get_objects(
-            "planet",
+            "Planet_product",
             [{"name": "name", "value": "防脱固发洗发水"}, {"name": "name", "value": "氨基酸保湿护发洗发水"}],
             5,
         )
     )
     print(result)
 
-    result = loop.run_until_complete(kb.get_object("planet", "12"))
-    print('id=0', result)
+    result = loop.run_until_complete(kb.get_object("Planet_product", "1"))
+    print('id=1', result)
 
-    result = loop.run_until_complete(kb.get_object("planet", "氨基酸保湿护发洗发水"))
+    result = loop.run_until_complete(kb.get_object("Planet_product", None))
     print(result)
 
-    result = loop.run_until_complete(kb.get_object("planet", "防脱固发洗发水"))
+    result = loop.run_until_complete(kb.get_object("Planet_product", "防脱固发洗发水"))
     print(result)
 
-    result = loop.run_until_complete(kb.get_attributes_of_object("planet"))
+    result = loop.run_until_complete(kb.get_attributes_of_object("Planet_product"))
     print(result)
 
     loop.close()

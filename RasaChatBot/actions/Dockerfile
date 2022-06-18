@@ -38,3 +38,6 @@ RUN apt-get update && apt-get install -y vim
 
 # 指定暴露端口
 EXPOSE 5055
+
+# ENTRYPOINT ["./entrypoint.sh"]
+# CMD ["start" "--actions" "actions"]

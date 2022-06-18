@@ -5,8 +5,12 @@
 @Author  : hcai
 @Email   : hua.cai@unidt.com
 """
+import os
 import requests
 import json
+from config.config import get_logger, proj_root
+from config.config import RASA_HOST, RASA_PORT
+logger = get_logger('live', os.path.join(proj_root, 'log/live_assistant.log'))
 
 def requestRasabotServer(userid, content):
     """
@@ -19,10 +23,14 @@ def requestRasabotServer(userid, content):
     # rasa使用rest channel
     # https://rasa.com/docs/rasa/user-guide/connectors/your-own-website/#rest-channels
     # POST /webhooks/rest/webhook
-    rasaUrl = "http://{0}:{1}/webhooks/rest/webhook".format('rasa_server', '5005')
-
-    response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
-    response = response.text.encode('utf-8').decode("unicode-escape")
+    rasaUrl = "http://{0}:{1}/webhooks/rest/webhook".format(RASA_HOST, RASA_PORT)
+    response = {}
+    logger.info("params {}".format(params))
+    try:
+        response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
+        response = response.text.encode('utf-8').decode("unicode-escape")
+    except Exception as e:
+        logger.error("requestRasabotServer error:{}!".format(e))
     return response
 
 def requestRasabot(url, params, method='post'):
@@ -33,13 +41,17 @@ def requestRasabot(url, params, method='post'):
     :param method: 请求方式
     :return:  json格式响应数据
     """
-    rasaUrl = "http://{0}:{1}/{2}".format('rasa_server', '5005', url)
+    rasaUrl = "http://{0}:{1}/{2}".format(RASA_HOST, RASA_PORT, url)
     response = ''
-    if method == 'post':
-        response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
-        response = response.text
-    elif method == 'get':
-        response = requests.get(rasaUrl, headers={'Content-Type': 'application/json'})
-        response = response.text
-    response = response.encode('utf-8').decode("unicode-escape")
+    logger.info("params {}".format(params))
+    try:
+        if method == 'post':
+            response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
+            response = response.text
+        elif method == 'get':
+            response = requests.get(rasaUrl, headers={'Content-Type': 'application/json'})
+            response = response.text
+        response = response.encode('utf-8').decode("unicode-escape")
+    except Exception as e:
+        logger.error("requestRasabot service error:{}!".format(e))
     return response

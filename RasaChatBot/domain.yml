@@ -7,7 +7,13 @@ intents:
   - whoareyou
   - greet
   - goodbye
-  - faq
+  - welcome
+  - live_thanks
+  - live_follow
+  - live_join
+  - live_share
+  - live_introduction
+  - live_buy
   - product_quality
   - shipment_location
   - shipment_time
@@ -16,6 +22,9 @@ intents:
   - shipment_return
   - shipment_insurance
   - shipment_company
+  - shipment_info
+  - shipment_destination
+  - invoice
   - discount
   - discount_lottery
   - human_service
@@ -28,6 +37,7 @@ intents:
   - stop
   - chitchat
   - nlu_fallback
+  - others
 entities:
   - object_type
   - mention
@@ -40,6 +50,7 @@ slots:
     mappings:
       - type: from_entity
         entity: object_type
+    initial_value: product
   mention:
     type: any
     mappings:
@@ -83,6 +94,9 @@ actions:
   - action_shipment_return
   - action_shipment_insurance
   - action_shipment_company
+  - action_shipment_info
+  - action_shipment_destination
+  - action_invoice
   - action_discount
   - action_discount_lottery
   - action_human_service
@@ -97,3 +111,10 @@ actions:
   - utter_thanks
   - utter_whoareyou
   - utter_whattodo
+  - utter_welcome
+  - utter_live_buy
+  - utter_live_thanks
+  - utter_live_follow
+  - utter_live_join
+  - utter_live_share
+  - utter_live_introduction

@@ -30,7 +30,7 @@ services:
       - ./RasaChatBot/:/app/
     environment:
       MPLCONFIGDIR: "/tmp/"
-      SANIC_WORKERS: 1
+      SANIC_WORKERS: 5
     links:
       - action_server
       - redis
@@ -47,7 +47,23 @@ services:
     volumes:
       - ./RasaChatBot/actions:/app/actions
     environment:
-      ACTION_SERVER_SANIC_WORKERS: 1
+      ACTION_SERVER_SANIC_WORKERS: 5
+    links:
+      - neo4j
+
+  embedding_server:
+    build:
+      context: ./
+      dockerfile: SemanticMatch/Dockerfile
+    image: rasachatbot_embedding_server:latest
+    container_name: rasachatbot_embedding_server
+    networks: [ 'rasa-network' ]
+    ports:
+      - 8069:8068
+    volumes:
+      - ./SemanticMatch:/root/SemanticMatch
+    environment:
+      ACTION_SERVER_SANIC_WORKERS: 5
 
   neo4j:
     image: neo4j:latest

@@ -275,8 +275,8 @@ class DataGenerator(object):
 
 if __name__ == '__main__':
     # 读取yml文件
-    # file_path = os.path.join(os.path.dirname(__file__),'../data/nlu/chitchat_base_nlu.yml')
-    # read_yaml_to_ordered_dict(file_path)
-    dg = DataGenerator()
-    dg.generate(['planet'])
+    file_path = os.path.join(os.path.dirname(__file__),'../RasaChatBot/data/nlu/planet_prod_nlu.yml')
+    read_yaml_to_ordered_dict(file_path)
+    # dg = DataGenerator()
+    # dg.generate(['planet'])
 
