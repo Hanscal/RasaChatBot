@@ -18,7 +18,7 @@ from wtforms import StringField, PasswordField
 from wtforms.validators import DataRequired
 
 from scripts.user_model import User, query_user
-from scripts.chat_request import requestRasabotServer, requestRasabot
+from scripts.chat_request import requestServerbot, requestRasabot
 
 from config.config import get_logger, proj_root
 logger = get_logger('live', os.path.join(proj_root, 'log/live_assistant.log'))
@@ -50,28 +50,7 @@ def live_assistant_api():
     entities = []
     if request.method == 'POST':
         data_json = request.get_json(force=True)
-        message_input = data_json['message']
-        user_name = data_json.get('user_name','hanscal')
-        shop_name = data_json.get('shop_name','')
-        input_name = shop_name+':'+user_name
-        response = requestRasabotServer(input_name, message_input)
-        try:
-            response = eval(response)
-        except Exception as e:
-            logger.info("can't eval response:{}, {}".format(response,e))
-        if response and isinstance(response, list):
-            response = '\n'.join([i['text'] for i in response])
-        message_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, message_input))
-        nlu_response = requestRasabot(url='model/parse', params={'text': message_input, "message_id": message_id}, method='post')
-        nlu_response = json.loads(nlu_response)
-        intent = nlu_response.get('intent', {})
-        intent_name = intent.get('name', None)
-        if intent_name == 'faq':
-            intent_name = nlu_response.get('response_selector', {}).get("default",{}).get("response",{}).get("intent_response_key", 'faq')
-        intent_confidence = intent.get('confidence', None)
-        logger.info("intent name: {}".format(intent_name))
-        entity_tmp = nlu_response.get('entities', [])
-        entities = [{"name":ent['entity'], "value":ent['value'], "confidence":ent['confidence_entity']} for ent in entity_tmp]
+        entities, intent_confidence, intent_name, response = requestServerbot(data_json)
     else:
         logger.error("only support post method!")
     logger.info("response: {}".format(response))
@@ -145,12 +124,11 @@ def live_assistant_ui():
     if request.method == 'POST':
         b0 = time.time()
         question = request.form["question"]
-        answer = requestRasabotServer(shop_name+':'+user_name, question)
-        answer = eval(answer)
-        if answer and isinstance(answer, list):
-            answer = '\n'.join([i['text'] for i in answer])
+        data_json = {"message":question,"user_name":user_name,"shop_name":shop_name}
+        entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
         logger.info("response: {}".format(answer))
         logger.info('total costs {:.2f}s'.format(time.time() - b0))
+        answer = str({"response":answer,"intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities})
         return json.dumps({'answer': answer},ensure_ascii=False)
 
     return render_template("chat.html", username=username)

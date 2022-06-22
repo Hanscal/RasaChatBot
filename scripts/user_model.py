@@ -11,7 +11,8 @@ from flask_login import UserMixin
 
 users = [
     {'id':'planet', 'shopname':'planet', 'username': 'Tom', 'password': '111111'},
-    {'id':'yunjing', 'shopname':'yunjing', 'username': 'Michael', 'password': '123456'}
+    {'id':'yunjing', 'shopname':'yunjing', 'username': 'Michael', 'password': '123456'},
+    {'id':'qinyuan', 'shopname':'qinyuan', 'username': 'Hanscal', 'password': '888888'}
 ]
 
 class User(UserMixin):

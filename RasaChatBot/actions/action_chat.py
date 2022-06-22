@@ -16,8 +16,9 @@ from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker, events
 from rasa_sdk.events import UserUtteranceReverted
 from rasa_sdk.executor import CollectingDispatcher
-
-shop_list = ['yunjing', 'planet']
+import sys
+sys.path.append('.')
+from .action_config import shop_list
 file_root = os.path.dirname(__file__)
 
 

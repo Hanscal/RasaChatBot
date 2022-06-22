@@ -490,9 +490,9 @@ class MyBertTokenizer(Tokenizer):
             logger.info(f"don't need to Load MyBertTokenizer User Dictionary at {userdict}")
 
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
-        return ["BertTokenizer"]
+    # @classmethod
+    # def required_packages(cls) -> List[Text]:
+    #     return ["BertTokenizer"]
 
     def train(self, training_data: TrainingData) -> Resource:
         """Copies the dictionary to the model storage."""
@@ -557,5 +557,5 @@ class MyBertTokenizer(Tokenizer):
 
 if __name__ == '__main__':
     bt = BasicTokenizer()
-    res = bt.tokenize("beijing shanghai是中国的首都，keras是一款好用的产品")
+    res = bt.tokenize("23UN-3578是中国的首都，keras是一款好用的产品")
     print(res)

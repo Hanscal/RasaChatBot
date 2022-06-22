@@ -73,6 +73,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
         super().__init__(knowledge_base)
         self.en_to_zh = EnToZh()
+        self.name_map = {"{}号链接".format(i):str(i) for i in range(1,200)}
 
     # 只 query 产品属性
     async def utter_objects(
@@ -190,6 +191,9 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         # import pdb;pdb.set_trace()
         # logging.info('mapping, mention {}, {}'.format(self.knowledge_base.ordinal_mention_mapping, self.use_last_object_mention))
         object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
+        # todo 对链接号等值进行替换成字符
+        if object_name in self.name_map:
+            object_name = self.name_map[object_name]
         logging.info("object_name, attribute: {},{}".format(object_name, attribute))
         if not object_name or not attribute:
             dispatcher.utter_message(response="utter_rephrase")
