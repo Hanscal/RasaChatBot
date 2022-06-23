@@ -32,7 +32,7 @@ class ChitChatKnowledge(object):
         return：
         {'result': {'O': -1, 'C': 0, 'E': -1, 'A': 0, 'N': -1}, 'msg': 'success', 'code': 200}
         """
-        url = "http://113.31.111.86:19068/personality"
+        url = "http://113.31.111.86:19064/personality"
         dic = {"nickname":nickname}
         res_final = None
         try:

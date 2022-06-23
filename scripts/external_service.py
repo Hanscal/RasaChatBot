@@ -32,7 +32,7 @@ def get_personality(nickname):
                       "欢迎进入直播间，最近生活是不是有些焦虑？多来直播间放松一下吧。"]}
 
     text_list = []
-    url = "http://113.31.111.86:19068/personality"
+    url = "http://113.31.111.86:19064/personality"
     dic = {"nickname": nickname}
     res = requests.post(url, data=json.dumps(dic))
     try:
@@ -47,14 +47,15 @@ def get_personality(nickname):
         print("get personality error!", e)
     return text_list
 
-def get_nlu_theme(text):
-    """定时轮询数据库中数据，返回分类结果"""
-    url = "http://113.31.111.86:48089/nlu_parse_api"
-    dic = {"message": text}
+
+def know_similarity(text,b_id=0):
+    """返回text相似度匹配结果"""
+    url = "http://113.31.111.86:19069/know_similarity"
+    dic = {"message": text, "b_id":b_id}
     res = requests.post(url, data=json.dumps(dic))
     result_dic = res.json()
     return result_dic
 
 if __name__ == '__main__':
     print(get_personality('hanscal'))
-    print(get_nlu_theme('你好'))
+    print(know_similarity('你好'))

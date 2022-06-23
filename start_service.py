@@ -19,6 +19,7 @@ from wtforms.validators import DataRequired
 
 from scripts.user_model import User, query_user
 from scripts.chat_request import requestServerbot, requestRasabot
+from scripts.external_service import know_similarity
 
 from config.config import get_logger, proj_root
 logger = get_logger('live', os.path.join(proj_root, 'log/live_assistant.log'))
@@ -125,10 +126,11 @@ def live_assistant_ui():
         b0 = time.time()
         question = request.form["question"]
         data_json = {"message":question,"user_name":user_name,"shop_name":shop_name}
+        faq_dict = know_similarity(text=question)
         entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
         logger.info("response: {}".format(answer))
         logger.info('total costs {:.2f}s'.format(time.time() - b0))
-        answer = str({"response":answer,"intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities})
+        answer = str({"response":answer,"intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities, "faq_match":faq_dict})
         return json.dumps({'answer': answer},ensure_ascii=False)
 
     return render_template("chat.html", username=username)
