@@ -1,4 +1,5 @@
 Flask
 Flask-Cors
-transformers==4.2.0
+jieba
+transformers==4.15.0
 requests==2.25.1

@@ -5,6 +5,7 @@
 @date: 10/06/2022
 """
 import os
+import random
 import sys
 import time
 import json
@@ -12,14 +13,15 @@ import logging
 import torch
 import numpy as np
 from transformers import BertModel, BertTokenizer
-
+sys.path.append('.')
+from augment.language_model_generate import BartAugmentor, BertAugmentor
+from augment.baidu_translate import Translator
 from flask import Flask, request
 from flask_cors import CORS
 
 #MODEL_NAME = './model/bert-base-chinese'
 #BERT-Base, Chinese: Chinese Simplified and Traditional, 12-layer, 768-hidden, 12-heads, 110M parameters
 file_root = os.path.dirname(__file__)
-sys.path.append('.')
 
 # 初始化日志引擎
 def get_logger(logger_name, log_file, level=logging.INFO):
@@ -178,6 +180,46 @@ def get_normalized_sentence_embedding():
         logger.error("only support post method!")
     logger.info('total costs {:.2f}s'.format(time.time() - b0))
     return json.dumps({"embeddings": response}, cls=NumpyEncoder)
+
+
+berta = BertAugmentor(model_dir=os.path.join(file_root, 'model/chinese-roberta-wwm-ext'))
+barta = BartAugmentor(model_dir=os.path.join(file_root, 'model/bart-base-chinese'))
+bdta = Translator()
+
+@app.route('/data_augment',methods=['POST'])
+def data_augment():
+    b0 = time.time()
+    res_all = []
+    num = 0
+    if request.method == 'POST':
+        data_json = request.get_json(force=True)
+        sent = data_json['sentence']
+        num = int(data_json['aug_number'])
+        method = data_json.get('method','generate') # method可以为generate和translate
+        try:
+            if method == "translate":
+                sent0 = bdta.back_translate(sent, nums=num)
+                if len(sent0) < 25:
+                    num_half = int(num) // 2
+                    sents1 = berta.augment(sent, num_half)
+                    sents2 = barta.augment(sent, num_half)
+                    res_all.extend(sents1)
+                    res_all.extend(sents2)
+            else:
+                num_half = int(num) // 2
+                sents1 = berta.augment(sent, num_half)
+                sents2 = barta.augment(sent, num_half)
+                res_all.extend(sents1)
+                res_all.extend(sents2)
+        except Exception as e:
+            logger.info("data augment error: {}".format(e))
+        res_all = list(set(res_all))
+        random.shuffle(res_all)
+    else:
+        logger.error("only support post method!")
+    logger.info('total costs {:.2f}s'.format(time.time() - b0))
+    return json.dumps({"aug_sentences": res_all[:num]},ensure_ascii=False)
+
 
 if __name__ == "__main__":
     # sents = ['你好','你提供什么功能','发什么快递']
