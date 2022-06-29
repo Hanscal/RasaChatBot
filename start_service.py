@@ -52,6 +52,7 @@ def live_assistant_api():
     if request.method == 'POST':
         data_json = request.get_json(force=True)
         entities, intent_confidence, intent_name, response = requestServerbot(data_json)
+        intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
     else:
         logger.error("only support post method!")
     logger.info("response: {}".format(response))
@@ -126,7 +127,8 @@ def live_assistant_ui():
         b0 = time.time()
         question = request.form["question"]
         data_json = {"message":question,"user_name":user_name,"shop_name":shop_name}
-        faq_dict = know_similarity(text=question)
+        shop_name_map = {"yunjing":"10010", 'qinyuan':"10012", "planet":"10007"}
+        faq_dict = know_similarity(text=question,b_id=shop_name_map.get(shop_name.lower(), '0'))
         entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
         logger.info("response: {}".format(answer))
         logger.info('total costs {:.2f}s'.format(time.time() - b0))
