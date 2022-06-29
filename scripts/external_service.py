@@ -52,10 +52,39 @@ def know_similarity(text,b_id=0):
     """返回text相似度匹配结果"""
     url = "http://113.31.111.86:19069/know_similarity"
     dic = {"message": text, "b_id":b_id}
-    res = requests.post(url, data=json.dumps(dic))
-    result_dic = res.json()
+    result_dic = {}
+    try:
+        res = requests.post(url, data=json.dumps(dic))
+        result_dic = res.json()
+    except Exception as e:
+        print("know similarity error:{}".format(e))
+    return result_dic
+
+def request_rasa(message, user_name, shop_name):
+    """返回text相似度匹配结果"""
+    url = "http://113.31.111.86:48089/live_assistant_api"
+    dic = {"message": message, "user_name": user_name, "shop_name": shop_name}
+    result_dic = {}
+    try:
+        res = requests.post(url, data=json.dumps(dic))
+        result_dic = res.json()
+    except Exception as e:
+        print("request rasa error:{}".format(e))
+    return result_dic
+
+def request_attribute(message):
+    """返回属性映射值"""
+    url = "http://113.31.111.86:18614/attribute_predict"
+    dic = {"message": message}
+    result_dic = {}
+    try:
+        res = requests.post(url, data=json.dumps(dic))
+        result_dic = res.json()
+    except Exception as e:
+        print("request rasa error:{}".format(e))
     return result_dic
 
 if __name__ == '__main__':
     print(get_personality('hanscal'))
     print(know_similarity('你好'))
+    print(request_attribute("亲请问一下你们发什么快递哦 快递"))

@@ -5,10 +5,11 @@
 @Author  : hcai
 @Email   : hua.cai@unidt.com
 """
-
+import json
 import os
 import re
 import logging
+import requests
 from collections import defaultdict
 from typing import Text, Dict, Any, List
 from rasa_sdk import utils
@@ -33,7 +34,7 @@ from rasa_sdk.knowledge_base.utils import (
 from neo4j import GraphDatabase
 import sys
 sys.path.append('.')
-from .action_config import shop_list
+from .action_config import shop_list, attribute_url
 from .action_config import EnToZh
 from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
@@ -191,9 +192,14 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         # import pdb;pdb.set_trace()
         # logging.info('mapping, mention {}, {}'.format(self.knowledge_base.ordinal_mention_mapping, self.use_last_object_mention))
         object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
+        user_id = tracker.sender_id
+        shop_id = user_id.split(':')[0]
         # todo 对链接号等值进行替换成字符
         if object_name in self.name_map:
             object_name = self.name_map[object_name]
+        if object_name in shop_list.get(shop_id,{}):
+            object_name = shop_list[shop_id][object_name]
+
         logging.info("object_name, attribute: {},{}".format(object_name, attribute))
         if not object_name or not attribute:
             dispatcher.utter_message(response="utter_rephrase")
@@ -213,13 +219,21 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         object_representation = object_repr_func(object_of_interest)
 
         key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
-
+        # todo 将attribute映射到库中的值上
+        if key_attribute not in object_of_interest:
+            # 如果不在映射库中，调用服务
+            msg = tracker.latest_message
+            msg = msg +' ' + key_attribute
+            try:
+                res = requests.post(attribute_url, data=json.dumps({"msg":msg}))
+                res = res.json()
+                key_attribute = res['name']
+            except Exception as e:
+                print("post attribute service error: {}".format(e))
         object_identifier = object_of_interest[key_attribute]
 
         await utils.call_potential_coroutine(self.utter_attribute_value(dispatcher, object_representation, attribute, value))
 
-        user_id = tracker.sender_id
-        shop_id = user_id.split(':')[0]
         # 在run函数中已经确保一定是在这个shop_list里面
         object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
         slots = [
