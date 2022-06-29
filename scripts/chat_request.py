@@ -77,7 +77,7 @@ def requestServerbot(data_json):
         intent_confidence = intent.get('confidence', None)
         logger.info("intent name: {}".format(intent_name))
         entity_tmp = nlu_response.get('entities', [])
-        entities = [{"name": ent['entity'], "value": ent['value'], "confidence": ent['confidence_entity'], "pos":(ent['start'],ent['end'])} for ent in entity_tmp]
+        entities = [{"name": ent['entity'], "value": ent['value'], "confidence": round(ent['confidence_entity']), "pos":(ent['start'],ent['end'])} for ent in entity_tmp]
     except Exception as e:
         logger.info("nlu request error: {}".format(e))
     # 根据nlu对response进行扩展
