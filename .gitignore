@@ -1,5 +1,6 @@
+.DS_Store
+*/.idea
 .idea
-./.idea
 RasaChatBot/.rasa
 RasaChatBot/tests
 RasaChatBot/bert-base-chinese

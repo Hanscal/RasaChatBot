@@ -15,6 +15,7 @@ intents:
   - live_introduction
   - live_buy
   - product_quality
+  - product_difference
   - shipment_location
   - shipment_time
   - shipment_price
@@ -50,7 +51,7 @@ slots:
     mappings:
       - type: from_entity
         entity: object_type
-    initial_value: product
+    initial_value: "product"
   mention:
     type: any
     mappings:
@@ -79,7 +80,7 @@ slots:
     mappings:
       - type: custom
   product:
-    type: any
+    type: list
     mappings:
       - type: from_entity
         entity: product
@@ -87,6 +88,7 @@ slots:
 actions:
   - action_greet
   - action_product_quality
+  - action_product_difference
   - action_shipment_location
   - action_shipment_time
   - action_shipment_price

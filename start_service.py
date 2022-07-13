@@ -21,8 +21,13 @@ from scripts.user_model import User, query_user
 from scripts.chat_request import requestServerbot, requestRasabot
 from scripts.external_service import know_similarity
 
-from config.config import get_logger, proj_root
-logger = get_logger('live', os.path.join(proj_root, 'log/live_assistant.log'))
+# from config.config import get_logger, proj_root
+# logger = get_logger('live', os.path.join(proj_root, 'log/live_assistant.log'))
+
+# 改成unidt log
+from config.config import UniLog, proj_root
+logger = UniLog('live service', os.path.join(proj_root, 'log/live_assistant.log'))
+
 
 app = Flask(__name__,template_folder='templates',static_folder='static')
 CORS(app, supports_credentials=True)
@@ -56,7 +61,7 @@ def live_assistant_api():
     else:
         logger.error("only support post method!")
     logger.info("response: {}".format(response))
-    logger.info('total costs {:.2f}s'.format(time.time() - b0))
+    logger.info('total costs {:.2f}s'.format(time.time() - b0), model_name='live_assistant_api')
     return json.dumps({"response":response, "intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities},ensure_ascii=False)
 
 
@@ -79,7 +84,7 @@ def nlu_parse_api():
         response = json.loads(response)
     else:
         logger.error("only support post method!")
-    logger.info('total costs {:.2f}s'.format(time.time() - b0))
+    logger.info('total costs {:.2f}s'.format(time.time() - b0), model_name='nlu_parser')
     return json.dumps({"response":response},ensure_ascii=False)
 
 
@@ -130,8 +135,9 @@ def live_assistant_ui():
         shop_name_map = {"yunjing":"10010", 'qinyuan':"10012", "planet":"10007"}
         faq_dict = know_similarity(text=question,b_id=shop_name_map.get(shop_name.lower(), '0'))
         entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
+        intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
         logger.info("response: {}".format(answer))
-        logger.info('total costs {:.2f}s'.format(time.time() - b0))
+        logger.info('total costs {:.2f}s'.format(time.time() - b0), model_name='live_assistant_ui')
         answer = str({"response":answer,"intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities, "faq_match":faq_dict})
         return json.dumps({'answer': answer},ensure_ascii=False)
 

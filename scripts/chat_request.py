@@ -77,18 +77,9 @@ def requestServerbot(data_json):
         intent_confidence = intent.get('confidence', None)
         logger.info("intent name: {}".format(intent_name))
         entity_tmp = nlu_response.get('entities', [])
-        entities = [{"name": ent['entity'], "value": ent['value'], "confidence": round(ent['confidence_entity']), "pos":(ent['start'],ent['end'])} for ent in entity_tmp]
+        entities = [{"name": ent['entity'], "value": ent['value'], "confidence": round(ent['confidence_entity'], 2), "pos":(ent['start'],ent['end'])} for ent in entity_tmp]
     except Exception as e:
         logger.info("nlu request error: {}".format(e))
-    # 根据nlu对response进行扩展
-    if intent_name == "query_prod_knowledge_base":
-        offset = 0
-        for i in entities:
-            if i["name"] == 'product' and not str(i['value']).isdigit():
-                # 对商品名进行归一化
-                prod_replace = name_normalize(i['value'])
-                message_input = message_input[:i['pos'][0]+offset] + prod_replace + message_input[i['pos'][1]+offset:]
-                offset = len(prod_replace) - len(str(i['value']))
     # response部分
     user_name = data_json.get('user_name', 'hanscal')
     shop_name = data_json.get('shop_name', '')
@@ -104,34 +95,3 @@ def requestServerbot(data_json):
     if response and isinstance(response, list):
         response = '\n'.join([i['text'] for i in response])
     return entities, intent_confidence, intent_name, response
-
-def name_normalize(ques):
-    def ch2digits(chinese):
-        numerals = {'零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '百': 100,
-                    '千': 1000}
-        total = 0
-        r = 1
-        for i in range(len(chinese) - 1, -1, -1):
-            # 倒序取
-            val = numerals.get(chinese[i])
-            if val >= 10 and i == 0:
-                if val > r:
-                    r = val
-                    total += val
-                else:
-                    r = r * val
-            elif val >= 10:
-                if val > r:
-                    r = val
-                else:
-                    r = r * val
-            else:
-                total += r * val
-        return total
-
-    if re.search('\d+号[链]?[接]?.*', str(ques)):
-        ques = str(re.search('(\d+)号[链]?[接]?.*', str(ques)).group(1))+"号链接"
-    elif re.search('[一二三四五六七八九十百千]+号', str(ques)):
-        ques = str(ch2digits(re.search('([一二三四五六七八九十百千]+)号[链]?[接]?.*', str(ques)).group(1))) + "号链接"
-    # todo 对商品名的归一化成链接号
-    return ques
