@@ -19,7 +19,7 @@ RUN python -m pip install -r requirements-actions.txt -i http://mirrors.aliyun.c
 ## Define environment variable
 ##环境变量硬编码及时区
 ENV TZ=Asia/Shanghai
-RUN /bin/sh -c apt-get update \
+RUN apt-get update \
     && apt-get install -y locales \
     && locale-gen zh_CN.UTF-8 \
     && update-locale LANG=zh_CN.UTF-8 LANGUAGE=zh_CN.UTF-8 LC_ALL=zh_CN.UTF-8 \

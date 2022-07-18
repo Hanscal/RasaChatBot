@@ -6,9 +6,7 @@
 @Email   : hua.cai@unidt.com
 """
 import json
-import os
 import random
-import re
 import logging
 import requests
 from collections import defaultdict
@@ -38,92 +36,15 @@ sys.path.append('.')
 from .action_config import shop_list, attribute_url
 from .action_config import EnToZh
 from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from .prod_kb_utils import NormalizeName, RetrieveProduct
 
-file_root = os.path.dirname(__file__)
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph
 # graph = Graph(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)
-class NormalizeName(object):
-    def __init__(self):
-        self.name_map = {"{}号链接".format(i): str(i) for i in range(1, 200)}
-
-    @staticmethod
-    def ch2digits(chinese):
-        numerals = {'零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
-                    '十': 10, '百': 100, '千': 1000}
-        total = 0
-        r = 1
-        for i in range(len(chinese) - 1, -1, -1):
-            # 倒序取
-            val = numerals.get(chinese[i])
-            if val >= 10 and i == 0:
-                if val > r:
-                    r = val
-                    total += val
-                else:
-                    r = r * val
-            elif val >= 10:
-                if val > r:
-                    r = val
-                else:
-                    r = r * val
-            else:
-                total += r * val
-        return total
-
-    def run(self, ques):
-        # todo object_name is list type
-        if not ques:
-            return ques  # none
-        if isinstance(ques, list):
-            # 取最后一个product
-            ques_new = []
-            ques_in_kb = []
-            for que in ques:
-                if re.search('\d+号[链]?[接]?.*', str(que)):
-                    ques_t = str(re.search('(\d+)号[链]?[接]?.*', str(que)).group(1)) + "号链接"
-                    que = self.name_map[ques_t] if ques_t in self.name_map else str(re.search('(\d+)号[链]?[接]?.*', str(que)).group(1))
-                    ques_in_kb.append(que)
-                    flag = True
-                elif re.search('[一二三四五六七八九十百千]+号', str(que)):
-                    ques_t = str(self.ch2digits(re.search('([一二三四五六七八九十百千]+)号[链]?[接]?.*', str(que)).group(1))) + "号链接"
-                    que = self.name_map[ques_t] if ques_t in self.name_map else str(re.search('(\d+)号[链]?[接]?.*', str(que)).group(1))
-                    ques_in_kb.append(que)
-                    flag = True
-                else:
-                    flag = False
-                # todo 对商品名的归一化成链接号
-                if not flag and que in self.name_map:
-                    que = self.name_map[que]
-                    ques_in_kb.append(que)
-                else:
-                    ques_new.append(que)
-            ques_new.extend(ques_in_kb)
-            ques = ques_new
-        print("ques",ques)
-        return ques
-
-
-class RetrieveProduct(object):
-    def __init__(self, shop_name):
-        p = os.path.join(file_root, '../data/dict/{}_name.txt'.format(shop_name))
-        if os.path.exists(p):
-            self.prod_names = [i.strip().split(' ')[0] for i in open(p, mode='r', encoding='utf-8').readlines() if i]
-            self.prod_names = sorted(self.prod_names, key=len)[::-1]  # 按照字符长度从长到短排序
-        else:
-            self.prod_names = []
-
-    def retrieve_prod_name(self, name):
-        """根据识别出来的name去name库中查找最相似的，并且超过阈值才放回，否则放回原值"""
-        if name in self.prod_names:
-            return name
-        pattern = re.compile('.*' + name + '.*')
-        for i in self.prod_names:
-            candidate = pattern.search(i)
-            name = candidate.group()
-        return name
 
 name_norm = NormalizeName()
+ret_prod = RetrieveProduct(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)
 
 class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def name(self) -> Text:
@@ -133,6 +54,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
         super().__init__(knowledge_base)
         self.en_to_zh = EnToZh()
+        self.shop_list_link = shop_list
 
     # 只 query 产品属性
     async def utter_objects(
@@ -255,8 +177,10 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         object_name = name_norm.run(object_name)  # 返回的是list, 或者none
         if object_name:
             object_name = object_name[-1]  # 取最后一个object_name
-        if object_name in shop_list.get(shop_id,{}):
-            object_name = shop_list[shop_id][object_name]
+        # todo 商品链接映射
+        self.shop_list_link.update(shop_id, {})
+        if object_name in self.shop_list_link[shop_id]:
+            object_name = self.shop_list_link[shop_id][object_name]
 
         # todo 测试
         if object_name in [str(i) for i in range(19, 200)]:

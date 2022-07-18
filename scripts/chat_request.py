@@ -68,7 +68,7 @@ def requestServerbot(data_json):
     # nlu部分
     message_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, message_input))
     try:
-        nlu_response = requestRasabot(url='model/parse', params={'text': message_input, "message_id": message_id}, method='post')
+        nlu_response = requestRasabot(url='model/parse', params={'text': message_input.replace(' ',''), "message_id": message_id}, method='post')
         nlu_response = json.loads(nlu_response)
         intent = nlu_response.get('intent', {})
         intent_name = intent.get('name', None)

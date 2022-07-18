@@ -6,11 +6,10 @@
 @Email   : hua.cai@unidt.com
 """
 import json
-import os
 import random
-import re
 import logging
 import requests
+import Levenshtein
 from collections import defaultdict
 from typing import Text, Dict, Any, List
 from rasa_sdk import utils
@@ -38,108 +37,13 @@ sys.path.append('.')
 from .action_config import shop_list, attribute_url
 from .action_config import EnToZh
 from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from .prod_kb_utils import NormalizeName
 
-file_root = os.path.dirname(__file__)
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph
 # graph = Graph(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)
-class NormalizeName(object):
-    def __init__(self):
-        self.name_map = {"{}号链接".format(i): str(i) for i in range(1, 200)}
-
-    @staticmethod
-    def ch2digits(chinese):
-        numerals = {'零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
-                    '十': 10, '百': 100, '千': 1000}
-        total = 0
-        r = 1
-        for i in range(len(chinese) - 1, -1, -1):
-            # 倒序取
-            val = numerals.get(chinese[i])
-            if val >= 10 and i == 0:
-                if val > r:
-                    r = val
-                    total += val
-                else:
-                    r = r * val
-            elif val >= 10:
-                if val > r:
-                    r = val
-                else:
-                    r = r * val
-            else:
-                total += r * val
-        return total
-
-    def run(self, ques):
-        # todo object_name is list type
-        if not ques:
-            return ques  # none
-        if isinstance(ques, list):
-            # 取最后一个product
-            ques_new = []
-            ques_in_kb = []
-            for que in ques:
-                if re.search('\d+号[链]?[接]?.*', str(que)):
-                    ques_t = str(re.search('(\d+)号[链]?[接]?.*', str(que)).group(1)) + "号链接"
-                    que = self.name_map[ques_t] if ques_t in self.name_map else str(re.search('(\d+)号[链]?[接]?.*', str(que)).group(1))
-                    ques_in_kb.append(que)
-                    flag = True
-                elif re.search('[一二三四五六七八九十百千]+号', str(que)):
-                    ques_t = str(self.ch2digits(re.search('([一二三四五六七八九十百千]+)号[链]?[接]?.*', str(que)).group(1))) + "号链接"
-                    que = self.name_map[ques_t] if ques_t in self.name_map else str(re.search('(\d+)号[链]?[接]?.*', str(que)).group(1))
-                    ques_in_kb.append(que)
-                    flag = True
-                else:
-                    flag = False
-                # todo 对商品名的归一化成链接号
-                if not flag and que in self.name_map:
-                    que = self.name_map[que]
-                    ques_in_kb.append(que)
-                else:
-                    ques_new.append(que)
-            ques_new.extend(ques_in_kb)
-            ques = ques_new
-        return ques
-
-    def find_lcsubstr(self, s1, s2):
-        if len(s1) > len(s2):
-            s1, s2 = s2, s1
-        # 生成0矩阵，为方便后续计算，比字符串长度多了一列
-        m = [[0 for i in range(len(s2) + 1)] for j in range(len(s1) + 1)]
-        mmax = 0.01  # 最长匹配的长度
-        p = 0  # 最长匹配对应在s1中的最后一位
-        for i in range(len(s1)):
-            for j in range(len(s2)):
-                if s1[i] == s2[j]:
-                    m[i + 1][j + 1] = m[i][j] + 1
-                    if m[i + 1][j + 1] > mmax:
-                        mmax = m[i + 1][j + 1]
-                        p = i + 1
-        return s1[p - int(mmax):p], 2*mmax/(len(s1) + len(s2))  # 返回最长子串及其长度
-
-
-class RetrieveProduct(object):
-    def __init__(self, shop_name):
-        p = os.path.join(file_root, '../data/dict/{}_name.txt'.format(shop_name))
-        if os.path.exists(p):
-            self.prod_names = [i.strip().split(' ')[0] for i in open(p, mode='r', encoding='utf-8').readlines() if i]
-            self.prod_names = sorted(self.prod_names, key=len)[::-1]  # 按照字符长度从长到短排序
-        else:
-            self.prod_names = []
-
-    def retrieve_prod_name(self, name):
-        """根据识别出来的name去name库中查找最相似的，并且超过阈值才放回，否则放回原值"""
-        if name in self.prod_names:
-            return name
-        pattern = re.compile('.*' + name + '.*')
-        for i in self.prod_names:
-            candidate = pattern.search(i)
-            name = candidate.group()
-        return name
 
 name_norm = NormalizeName()
-# print(name_norm.find_lcsubstr("根据识别出来的name去name库中查找最相似的","根据识别出来的name去name相似的"))
 
 class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def name(self) -> Text:
@@ -149,6 +53,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
         super().__init__(knowledge_base)
         self.en_to_zh = EnToZh()
+        self.shop_list_link = shop_list
 
     # 只 query 产品属性
     def utter_attribute_value(
@@ -197,107 +102,22 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             value1, value2 = str(value1).strip('。.,，\n'), str(value2).strip('。.,，\n')
             if name == "intro":
                 # 先求公共最长连续子序列，判断相似度，如果相似度高，则不用这个属性
-                common_str, sim = name_norm.find_lcsubstr(value1, value2)
-                if sim < 0.7:
+                sim = Levenshtein.ratio(value1, value2)
+                if sim < 0.85:
                     diff_text = "({}){}; 而({}){}。".format(self.en_to_zh(object_name[0]), value1, self.en_to_zh(object_name[1]), value2)
                     break
             else:
-                if len(attribute_name) <= 3:
-                    diff_text += "{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[0]), self.en_to_zh(name), value2)
+                if attribute_name and len(attribute_name) == 1:
+                    
+                elif attribute_name and len(attribute_name) <= 3:
+                    if value1 != value2:
+                        diff_text += "{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2)
                 elif name in random.sample(attr_list, 3):
-                    diff_text += "{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[0]), self.en_to_zh(name), value2)
+                    diff_text += "{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2)
         if diff_text:
             dispatcher.utter_message(text="{}与{}的区别是：{}".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), diff_text))
         else:
             dispatcher.utter_message(response="utter_rephrase")
-
-    async def _query_attribute(
-        self,
-        dispatcher: CollectingDispatcher,
-        object_type: Text,
-        attribute: Text,
-        tracker: Tracker,
-    ) -> List[Dict]:
-        """
-        Queries the knowledge base for the value of the requested attribute of the
-        mentioned object and outputs it to the user.
-
-        Args:
-            dispatcher: the dispatcher
-            tracker: the tracker
-
-        Returns: list of slots
-        """
-        # import pdb;pdb.set_trace()
-        # logging.info('mapping, mention {}, {}'.format(self.knowledge_base.ordinal_mention_mapping, self.use_last_object_mention))
-        object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
-        user_id = tracker.sender_id
-        shop_id = user_id.split(':')[0]
-        # todo 对链接号进行映射
-        object_name = name_norm.run(object_name) # 得到list
-        if object_name and len(object_name) >= 2:
-            object_name = object_name[-2:] # 如果大于2个产品，取最后两个
-        elif object_name and len(object_name) == 1:
-            object_name_last = tracker.slots['knowledge_base_last_object'] # str
-            if object_name_last:
-                object_name.append(object_name_last)
-        for obj_name in object_name:
-            object_name_new = []
-            if obj_name in shop_list.get(shop_id,{}):
-                obj_name = shop_list[shop_id][obj_name]
-            # todo 测试
-            if obj_name in [str(i) for i in range(19, 200)]:
-                obj_name = random.choice([str(i) for i in range(1,19)])
-            object_name_new.append(obj_name)
-            # todo 对商品名进行实体链接
-
-        logging.info("object_name, attribute: {},{}".format(object_name, attribute))
-        if not object_name or not attribute or len(object_name) < 2:
-            dispatcher.utter_message(response="utter_rephrase")
-            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
-
-        # 通过任意一个商品拿到属性值
-        object_of_interest = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, object_name[0]))
-        logging.info("objects interest {}, object_name {}".format(object_of_interest, object_name))
-        if attribute not in object_of_interest:
-            # 如果不在映射库中，调用服务
-            msg = tracker.latest_message['text'] +' ' + attribute
-            try:
-                res = requests.post(attribute_url, data=json.dumps({"msg":msg}))
-                res = res.json()
-                conf = res['confidence']
-                if float(conf) > 0.7:
-                    attribute = res['name']
-            except Exception as e:
-                print("post attribute service error: {}".format(e))
-
-        if not object_of_interest or attribute not in object_of_interest:
-            dispatcher.utter_message(response="utter_rephrase")
-            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
-        # logging.info("{} {}".format(object_of_interest, attribute))
-        value = object_of_interest[attribute]
-
-        object_repr_func = await utils.call_potential_coroutine(self.knowledge_base.get_representation_function_of_object(object_type))
-
-        object_representation = object_repr_func(object_of_interest)
-
-        key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
-
-        object_identifier = object_of_interest[key_attribute]
-
-        await utils.call_potential_coroutine(self.utter_attribute_value(dispatcher, object_representation, attribute, value))
-
-        # 在run函数中已经确保一定是在这个shop_list里面
-        object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
-        slots = [
-            SlotSet(SLOT_OBJECT_TYPE, object_type_wo_shop),
-            SlotSet(SLOT_ATTRIBUTE, None),
-            SlotSet(SLOT_MENTION, None),
-            SlotSet(SLOT_LAST_OBJECT, object_identifier),
-            SlotSet(SLOT_LAST_OBJECT_TYPE, object_type_wo_shop),
-        ]
-
-        return slots
 
     async def _query_difference(
         self,
@@ -329,21 +149,26 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             object_name_last = tracker.slots['knowledge_base_last_object'] # str
             if object_name_last:
                 object_name.append(object_name_last)
-        for obj_name in object_name:
-            object_name_new = []
-            if obj_name in shop_list.get(shop_id,{}):
-                obj_name = shop_list[shop_id][obj_name]
-            # todo 测试
-            if obj_name in [str(i) for i in range(19, 200)]:
-                obj_name = random.choice([str(i) for i in range(1,19)])
-            object_name_new.append(obj_name)
-            # todo 对商品名进行实体链接
 
-        logging.info("object_name, attribute: {},{}".format(object_name, attribute))
         # 如果存在的商品少于两个，则退出查询
         if not object_name or len(object_name) < 2:
             dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
+
+        object_name_new = []
+        # todo 建立映射关系
+        self.shop_list_link.update({shop_id:{}})
+        for obj_name in object_name:
+            if obj_name in self.shop_list_link[shop_id]:
+                obj_name = self.shop_list_link[shop_id][obj_name]
+            # todo 测试
+            if obj_name in [str(i) for i in range(19, 200)]:
+                obj_name = random.choice([str(i) for i in range(1,19)])
+            object_name_new.append(obj_name)
+        object_name = object_name_new  # 将值赋给object_name
+        # todo 对商品名进行实体链接
+
+        logging.info("object_name, attribute: {},{}".format(object_name, attribute))
 
         prod1 = object_name[0]
         # 通过任意一个商品拿到属性值
@@ -373,8 +198,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                         attribute = res['name']
                 except Exception as e:
                     print("post attribute service error: {}".format(e))
-            # 如果链接后属性在库里
-            if attribute in object_of_interest1:
+            # 如果链接后属性在库的交集里
+            if attribute in (set(object_of_interest1.keys()) & set(object_of_interest2.keys())):
                 value1 = object_of_interest1[attribute]
                 value2 = object_of_interest2[attribute]
                 prod_diff_key.append(attribute)
@@ -382,7 +207,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         if not prod_diff_key:
             # 如果只有商品, 同一个商家中的属性都有
-            for key, value1 in object_of_interest1.items():
+            for key in (set(object_of_interest1.keys()) & set(object_of_interest2.keys())):
+                value1 = object_of_interest1[key]
                 value2 = object_of_interest2[key]
                 if value1 != value2:
                     prod_diff_key.append(key)
@@ -730,7 +556,7 @@ if __name__ == '__main__':
     result = loop.run_until_complete(kb.get_object("Planet_product", None))
     print(result)
 
-    result = loop.run_until_complete(kb.get_object("Planet_product", "防脱固发洗发水"))
+    result = loop.run_until_complete(kb.get_object("Qinyuan_product", "前置过滤器"))
     print(result)
 
     result = loop.run_until_complete(kb.get_attributes_of_object("Planet_product"))
