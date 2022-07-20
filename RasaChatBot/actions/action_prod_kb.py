@@ -54,7 +54,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
         super().__init__(knowledge_base)
         self.en_to_zh = EnToZh()
-        self.shop_list_link = shop_list
+        self.shop_list_link = {}
 
     # 只 query 产品属性
     async def utter_objects(
@@ -178,9 +178,9 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         if object_name:
             object_name = object_name[-1]  # 取最后一个object_name
         # todo 商品链接映射
-        self.shop_list_link.update(shop_id, {})
-        if object_name in self.shop_list_link[shop_id]:
-            object_name = self.shop_list_link[shop_id][object_name]
+        self.shop_list_link = shop_list.get(shop_id, {})
+        if object_name in self.shop_list_link:
+            object_name = self.shop_list_link[object_name]
 
         # todo 测试
         if object_name in [str(i) for i in range(19, 200)]:

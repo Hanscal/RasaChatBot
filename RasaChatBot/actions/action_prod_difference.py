@@ -34,16 +34,18 @@ from rasa_sdk.knowledge_base.utils import (
 from neo4j import GraphDatabase
 import sys
 sys.path.append('.')
-from .action_config import shop_list, attribute_url
+from .action_config import shop_list, attr_list, attribute_url
 from .action_config import EnToZh
 from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-from .prod_kb_utils import NormalizeName
+from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from .prod_kb_utils import NormalizeName, RetrieveProduct
 
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph
 # graph = Graph(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)
 
 name_norm = NormalizeName()
+ret_prod = RetrieveProduct(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)
 
 class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def name(self) -> Text:
@@ -53,7 +55,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
         super().__init__(knowledge_base)
         self.en_to_zh = EnToZh()
-        self.shop_list_link = shop_list
+        self.shop_list_link = {}
+        self.attr_list_link = []
 
     # 只 query 产品属性
     def utter_attribute_value(
@@ -96,26 +99,34 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             attribute_name: the name of the attribute
             attribute_value: the value of the attribute
         """
-        attr_list = ['通量','流速','纯水流量','废水比','颜色','总净水量','出水口','specification','effect']
-        diff_text = ''
+        diff_text = []
+        logging.info("utter: object_name, attribute: {},{}".format(object_name, attribute_name))
+        flag = False
         for name, (value1, value2) in zip(attribute_name, attribute_value):
             value1, value2 = str(value1).strip('。.,，\n'), str(value2).strip('。.,，\n')
             if name == "intro":
                 # 先求公共最长连续子序列，判断相似度，如果相似度高，则不用这个属性
                 sim = Levenshtein.ratio(value1, value2)
                 if sim < 0.85:
-                    diff_text = "({}){}; 而({}){}。".format(self.en_to_zh(object_name[0]), value1, self.en_to_zh(object_name[1]), value2)
+                    diff_text = ["({}){}; 而({}){}。".format(self.en_to_zh(object_name[0]), value1, self.en_to_zh(object_name[1]), value2)]
                     break
             else:
-                if attribute_name and len(attribute_name) == 1:
-                    
-                elif attribute_name and len(attribute_name) <= 3:
+                if len(attribute_name) == 1:
                     if value1 != value2:
-                        diff_text += "{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2)
-                elif name in random.sample(attr_list, 3):
-                    diff_text += "{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2)
+                        diff_text = ["{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2)]
+                    else:
+                        flag = True
+                        diff_text = ["{}和{}的{}没有区别。".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), self.en_to_zh(name))]
+                elif name in self.attr_list_link:
+                    if value1 != value2:
+                        diff_text.append("{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2))
         if diff_text:
-            dispatcher.utter_message(text="{}与{}的区别是：{}".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), diff_text))
+            if len(diff_text) > 3:
+                diff_text = random.sample(diff_text, 3)
+            if flag:
+                dispatcher.utter_message(text = ''.join(diff_text))
+            else:
+                dispatcher.utter_message(text="{}与{}的区别是：{}".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), ''.join(diff_text)))
         else:
             dispatcher.utter_message(response="utter_rephrase")
 
@@ -157,10 +168,11 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         object_name_new = []
         # todo 建立映射关系
-        self.shop_list_link.update({shop_id:{}})
+        self.shop_list_link = shop_list.get(shop_id, {})
+        self.attr_list_link = attr_list.get(shop_id, [])
         for obj_name in object_name:
-            if obj_name in self.shop_list_link[shop_id]:
-                obj_name = self.shop_list_link[shop_id][obj_name]
+            if obj_name in self.shop_list_link:
+                obj_name = self.shop_list_link[obj_name]
             # todo 测试
             if obj_name in [str(i) for i in range(19, 200)]:
                 obj_name = random.choice([str(i) for i in range(1,19)])
@@ -210,9 +222,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             for key in (set(object_of_interest1.keys()) & set(object_of_interest2.keys())):
                 value1 = object_of_interest1[key]
                 value2 = object_of_interest2[key]
-                if value1 != value2:
-                    prod_diff_key.append(key)
-                    prod_diff_value.append((value1, value2))
+                prod_diff_key.append(key)
+                prod_diff_value.append((value1, value2))
 
         object_repr_func = await utils.call_potential_coroutine(self.knowledge_base.get_representation_function_of_object(object_type))
 
@@ -270,7 +281,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         # 对需要查询的字典进行指定更新
         self.en_to_zh.update(shop_name=shop_id)
-
         print("product action",object_type, attribute)
         logging.info("product， attribute： {} {}".format(object_type, attribute))
 
@@ -553,7 +563,7 @@ if __name__ == '__main__':
     result = loop.run_until_complete(kb.get_object("Planet_product", "1"))
     print('id=1', result)
 
-    result = loop.run_until_complete(kb.get_object("Planet_product", None))
+    result = loop.run_until_complete(kb.get_object("Planet_product", '1'))
     print(result)
 
     result = loop.run_until_complete(kb.get_object("Qinyuan_product", "前置过滤器"))
