@@ -158,7 +158,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             object_name = object_name[-2:] # 如果大于2个产品，取最后两个
         elif object_name and len(object_name) == 1:
             object_name_last = tracker.slots['knowledge_base_last_object'] # str
-            if object_name_last:
+            if object_name_last and object_name_last != object_name[0]:
                 object_name.append(object_name_last)
 
         # 如果存在的商品少于两个，则退出查询
