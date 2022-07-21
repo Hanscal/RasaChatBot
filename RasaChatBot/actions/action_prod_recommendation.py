@@ -30,6 +30,7 @@ from rasa_sdk.knowledge_base.utils import (
     get_attribute_slots,
 )
 
+
 import sys
 sys.path.append('.')
 from .action_config import shop_list, attr_list, attribute_url
@@ -47,7 +48,7 @@ ret_prod = RetrieveProduct(MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, M
 
 class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def name(self) -> Text:
-        return "action_product_difference"
+        return "action_product_recommendation"
 
     def __init__(self):
         knowledge_base = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 根据情况修改
@@ -81,7 +82,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             dispatcher.utter_message(text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name)))
 
     # 只 query 产品属性
-    def utter_product_difference(
+    def utter_product_recommendation(
             self,
             dispatcher: CollectingDispatcher,
             object_name: List,
@@ -128,7 +129,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         else:
             dispatcher.utter_message(response="utter_rephrase")
 
-    async def _query_difference(
+    async def _query_recommendation(
         self,
         dispatcher: CollectingDispatcher,
         object_type: Text,
@@ -152,17 +153,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         shop_id = user_id.split(':')[0]
         # todo 对链接号进行映射
         object_name = name_norm.run(object_name) # 得到list
-        if object_name and len(object_name) >= 2:
-            object_name = object_name[-2:] # 如果大于2个产品，取最后两个
-        elif object_name and len(object_name) == 1:
-            object_name_last = tracker.slots['knowledge_base_last_object'] # str
-            if object_name_last and object_name_last != object_name[0]:
-                object_name.append(object_name_last)
-
-        # 如果存在的商品少于两个，则退出查询
-        if not object_name or len(object_name) < 2:
-            dispatcher.utter_message(response="utter_rephrase")
-            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         object_name_new = []
         # todo 建立映射关系
@@ -180,24 +170,34 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         logging.info("object_name, attribute: {},{}".format(object_name, attribute))
 
-        prod1 = object_name[0]
-        # 通过任意一个商品拿到属性值
-        object_of_interest1 = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, prod1))
-        logging.info("objects interest {}, object_name {}".format(object_of_interest1, prod1))
-        prod2 = object_name[1]
-        object_of_interest2 = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, prod2))
-        logging.info("objects interest {}, object_name {}".format(object_of_interest2, prod2))
+        object_of_interest_list = []
+        # 返回25个产品的key,value list，格式为[{'name': 'KRL5003', 'id': '1'...},{'name': 'KRL5006', 'id': '2'...},...]
+        all_prod_names = await utils.call_potential_coroutine(self.knowledge_base.get_objects(object_type, attributes=[], limit=25))
+        prod_names = [i['name'] for i in all_prod_names]
+        prod_ids = [i['id'] for i in all_prod_names]
+        # 如果有产品，则取他们的交集，考虑name和id
+        if object_name:
+            name_union = set(object_name) & set(prod_names)
+            id_union = set(object_name) & set(prod_ids)
+            object_name_union = name_union | id_union
+            object_name = list(object_name_union)
+        else:
+            object_name = prod_names
+        for prod in object_name:
+            # 通过商品拿到属性值
+            object_of_interest_ = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, prod))
+            object_of_interest_list.append(object_of_interest_)
+            logging.info("objects interest {}, object_name {}".format(object_of_interest_, prod))
 
-        # 任何一个商品查询不到，则退出查询
-        if not object_of_interest1 or not object_of_interest2:
+        # 如果没有属性，或者一个商品也没有返回，则退出查询
+        if not attribute or not object_of_interest_list:
             dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
-        prod_diff_key = []
-        prod_diff_value = []
-        # 如果有商品和属性
-        if attribute and object_name:
-            if attribute not in object_of_interest1:
+        # 如果有属性和商品
+        for item in object_of_interest_list:
+            # 得到产品的属性keys
+            if attribute not in item.keys():
                 # 如果不在映射库中，调用服务
                 msg = tracker.latest_message['text'] +' ' + attribute
                 try:
@@ -206,26 +206,15 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                     conf = res['confidence']
                     if float(conf) > 0.7:
                         attribute = res['name']
+                        break
                 except Exception as e:
                     print("post attribute service error: {}".format(e))
-            # 如果链接后属性在库的交集里
-            if attribute in (set(object_of_interest1.keys()) & set(object_of_interest2.keys())):
-                value1 = object_of_interest1[attribute]
-                value2 = object_of_interest2[attribute]
-                prod_diff_key.append(attribute)
-                prod_diff_value.append((value1, value2))
 
-        if not prod_diff_key:
-            # 如果只有商品, 同一个商家中的属性都有
-            for key in (set(object_of_interest1.keys()) & set(object_of_interest2.keys())):
-                value1 = object_of_interest1[key]
-                value2 = object_of_interest2[key]
-                prod_diff_key.append(key)
-                prod_diff_value.append((value1, value2))
+        # 根据object_name和属性写逻辑，需要根据attribute去object_of_interest_list
+
 
         object_repr_func = await utils.call_potential_coroutine(self.knowledge_base.get_representation_function_of_object(object_type))
 
-        object_representation1 = object_repr_func(object_of_interest1)
         object_representation2 = object_repr_func(object_of_interest2)  # 保存最后一个提到的产品
 
         key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
@@ -282,4 +271,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         print("product action",object_type, attribute)
         logging.info("product， attribute： {} {}".format(object_type, attribute))
 
-        return await self._query_difference(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product
+        return await self._query_recommendation(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product
+
+if __name__ == '__main__':
+    interest_list = [{"name":"KRL5006","id":"1","sf":""},{"name":"KRL5006","id":"1","sf":""}]
