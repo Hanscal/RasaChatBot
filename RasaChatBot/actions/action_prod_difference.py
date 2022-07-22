@@ -57,30 +57,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         self.attr_list_link = []
 
     # 只 query 产品属性
-    def utter_attribute_value(
-        self,
-        dispatcher: CollectingDispatcher,
-        object_name: Text,
-        attribute_name: Text,
-        attribute_value: Text,
-    ) -> None:
-        """
-        Utters a response that informs the user about the attribute value of the
-        attribute of interest.
-        Args:
-            dispatcher: the dispatcher
-            object_name: the name of the object
-            attribute_name: the name of the attribute
-            attribute_value: the value of the attribute
-        """
-        if attribute_value:
-            dispatcher.utter_message(
-                text="{}的{}是：{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name),self.en_to_zh(attribute_value)).replace('\n','')
-            )
-        else:
-            dispatcher.utter_message(text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name)))
-
-    # 只 query 产品属性
     def utter_product_difference(
             self,
             dispatcher: CollectingDispatcher,
@@ -281,5 +257,4 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         self.en_to_zh.update(shop_name=shop_id)
         print("product action",object_type, attribute)
         logging.info("product， attribute： {} {}".format(object_type, attribute))
-
         return await self._query_difference(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product

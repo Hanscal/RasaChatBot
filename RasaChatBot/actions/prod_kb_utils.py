@@ -398,7 +398,7 @@ if __name__ == '__main__':
     import sys
 
     sys.path.append('.')
-    from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+    from RasaChatBot.actions.action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
     kb = Neo4jKnowledgeBase(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)  # 测试代码，根据情况修改
     loop = asyncio.get_event_loop()
@@ -406,9 +406,7 @@ if __name__ == '__main__':
     result = loop.run_until_complete(kb.get_objects("Planet_product", [], 5))
     print(result)
 
-    result = loop.run_until_complete(
-        kb.get_objects("Planet_product", [{"name": "name", "value": "防脱固发洗发水"}], 5)
-    )
+    result = loop.run_until_complete(kb.get_objects("Planet_product", [{"name": "name", "value": "防脱固发洗发水"}], 5))
     print(result)
 
     result = loop.run_until_complete(

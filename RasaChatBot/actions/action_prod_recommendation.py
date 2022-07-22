@@ -58,30 +58,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         self.attr_list_link = []
 
     # 只 query 产品属性
-    def utter_attribute_value(
-        self,
-        dispatcher: CollectingDispatcher,
-        object_name: Text,
-        attribute_name: Text,
-        attribute_value: Text,
-    ) -> None:
-        """
-        Utters a response that informs the user about the attribute value of the
-        attribute of interest.
-        Args:
-            dispatcher: the dispatcher
-            object_name: the name of the object
-            attribute_name: the name of the attribute
-            attribute_value: the value of the attribute
-        """
-        if attribute_value:
-            dispatcher.utter_message(
-                text="{}的{}是：{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name),self.en_to_zh(attribute_value)).replace('\n','')
-            )
-        else:
-            dispatcher.utter_message(text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name)))
-
-    # 只 query 产品属性
     def utter_product_recommendation(
             self,
             dispatcher: CollectingDispatcher,
@@ -176,11 +152,13 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         prod_names = [i['name'] for i in all_prod_names]
         prod_ids = [i['id'] for i in all_prod_names]
         # 如果有产品，则取他们的交集，考虑name和id
+        product_exist_flag = False
         if object_name:
             name_union = set(object_name) & set(prod_names)
             id_union = set(object_name) & set(prod_ids)
             object_name_union = name_union | id_union
             object_name = list(object_name_union)
+            product_exist_flag = True if object_name else False
         else:
             object_name = prod_names
         for prod in object_name:
@@ -205,22 +183,28 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                     res = res.json()
                     conf = res['confidence']
                     if float(conf) > 0.7:
-                        attribute = res['name']
+                        attribute = res['name']  # attribute归一化
                         break
                 except Exception as e:
                     print("post attribute service error: {}".format(e))
 
         # 根据object_name和属性写逻辑，需要根据attribute去object_of_interest_list
-
-
-        object_repr_func = await utils.call_potential_coroutine(self.knowledge_base.get_representation_function_of_object(object_type))
-
-        object_representation2 = object_repr_func(object_of_interest2)  # 保存最后一个提到的产品
+        if attribute == '规格':
+            pass
+        elif attribute == '使用人数':
+            pass
+        elif attribute == '流量':
+            pass
+        elif attribute == '安装方式':
+            pass
+        else:
+            dispatcher.utter_message(response="utter_rephrase")
+            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
-        object_identifier = object_of_interest2[key_attribute]
+        object_identifier = object_of_interest_list[-1][key_attribute] if product_exist_flag else None
 
-        await utils.call_potential_coroutine(self.utter_product_difference(dispatcher, [object_representation1, object_representation2], prod_diff_key, prod_diff_value))
+        await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_of_interest_list))
 
         # 在run函数中已经确保一定是在这个shop_list里面
         object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
@@ -274,4 +258,4 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         return await self._query_recommendation(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product
 
 if __name__ == '__main__':
-    interest_list = [{"name":"KRL5006","id":"1","sf":""},{"name":"KRL5006","id":"1","sf":""}]
+    object_of_interest_list = [{"name":"KRL5006","id":"1","sf":""},{"name":"KRL5006","id":"1","sf":""}]
