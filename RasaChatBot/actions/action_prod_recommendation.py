@@ -8,8 +8,9 @@
 import json
 import random
 import logging
+import re
 import requests
-import Levenshtein
+from functools import reduce
 
 from typing import Text, Dict, Any, List
 from rasa_sdk import utils
@@ -57,13 +58,51 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         self.shop_list_link = {}
         self.attr_list_link = []
 
+    @staticmethod
+    def normalize_num_people(query: Text):
+        """
+        适用人数推荐类query中人数提取
+
+        Args:
+            que: tracker.latest_message['text'] or attribute
+
+        Returns: 适用人数
+        """
+        numerals = {'两': '2', '二': '2', '三': '3', '四': '4', '五': '5', '六': '6'}
+        if re.search('(\d)[个人/口/人].*', query):
+            return str(re.search('(\d)[个人/口/人].*', query).group(1))
+        elif re.search('([两/二/三/四/五/六])[个人/口/人].*', query):
+            return numerals[re.search('([两二三四五六])[个人/口/人].*', query).group(1)[-1]]
+        elif re.search('([一家/家用的/家庭]+).*', query):
+            return '家庭'
+        else:
+            return '无'
+
+    @staticmethod
+    def get_intent_value(tracker: Tracker):
+        """
+        nlu意图识别attribute_entity提取
+
+        Args:
+            tracker: the tracker
+
+        Returns: list of entities
+        """
+        entity_list = []
+        latest_mess = tracker.latest_message
+        for entity_dict in latest_mess['entities']:
+            if entity_dict['entity'] == 'attribute':
+                entity_tmp = latest_mess['text'][entity_dict['start']:entity_dict['end']]
+                entity_list.append(entity_tmp)
+        return entity_list
+
     # 只 query 产品属性
     def utter_product_recommendation(
             self,
             dispatcher: CollectingDispatcher,
             object_name: List,
             attribute_name: List,
-            attribute_value: List,
+            attribute_value: Text,
     ) -> None:
         """
         Utters a response that informs the user about the attribute value of the
@@ -74,34 +113,10 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             attribute_name: the name of the attribute
             attribute_value: the value of the attribute
         """
-        diff_text = []
+
         logging.info("utter: object_name, attribute: {},{}".format(object_name, attribute_name))
-        flag = False
-        for name, (value1, value2) in zip(attribute_name, attribute_value):
-            value1, value2 = str(value1).strip('。.,，\n'), str(value2).strip('。.,，\n')
-            if name == "intro":
-                # 先求公共最长连续子序列，判断相似度，如果相似度高，则不用这个属性
-                sim = Levenshtein.ratio(value1, value2)
-                if sim < 0.85:
-                    diff_text = ["({}){}; 而({}){}。".format(self.en_to_zh(object_name[0]), value1, self.en_to_zh(object_name[1]), value2)]
-                    break
-            else:
-                if len(attribute_name) == 1:
-                    if value1 != value2:
-                        diff_text = ["{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2)]
-                    else:
-                        flag = True
-                        diff_text = ["{}和{}的{}没有区别。".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), self.en_to_zh(name))]
-                elif name in self.attr_list_link:
-                    if value1 != value2:
-                        diff_text.append("{}的{}是{}; 而{}的{}是{}。".format(self.en_to_zh(object_name[0]), self.en_to_zh(name), value1, self.en_to_zh(object_name[1]), self.en_to_zh(name), value2))
-        if diff_text:
-            if len(diff_text) > 3:
-                diff_text = random.sample(diff_text, 3)
-            if flag:
-                dispatcher.utter_message(text = ''.join(diff_text))
-            else:
-                dispatcher.utter_message(text="{}与{}的区别是：{}".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), ''.join(diff_text)))
+        if attribute_value:
+            dispatcher.utter_message(text=attribute_value)
         else:
             dispatcher.utter_message(response="utter_rephrase")
 
@@ -189,22 +204,92 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                     print("post attribute service error: {}".format(e))
 
         # 根据object_name和属性写逻辑，需要根据attribute去object_of_interest_list
-        if attribute == '规格':
-            pass
-        elif attribute == '使用人数':
-            pass
-        elif attribute == '流量':
-            pass
+        text = ''
+        if attribute == '产品尺寸':
+            prod_attr_lst = [
+                (object['name'], reduce(lambda x, y: float(x) * float(y), object['产品尺寸'].split('mm')[0].split('*'))) for
+                object in
+                object_of_interest_list if '产品尺寸' in object]
+            prod_attr_lst = sorted(prod_attr_lst, key=lambda x: x[1], reverse=True)  # 根据属性值来排序
+            max_attr_value = prod_attr_lst[0][1]
+            prod_attr_dict_lst = [{'name': item[0], attribute: item[1]} for item in prod_attr_lst if
+                                  item[1] == max_attr_value]
+            if len(prod_attr_dict_lst) == 1:
+                text = "咱们店里现在正在售卖的产品中体积最小巧的一款是{}".format(prod_attr_dict_lst[0]['name'])
+            elif len(prod_attr_dict_lst) == 2:
+                dispatcher.utter_message(
+                    "咱们店里现在正在售卖的产品中体积最小巧的两款是{}和{}".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name']))
+            else:
+                prod_attr_dict_lst = random.sample(prod_attr_dict_lst, 3)
+                text = "咱们店里现在正在售卖的产品中体积最小巧的一款是 " + ' '.join([prod_attr['name'] for prod_attr in prod_attr_dict_lst])
+
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+
+        elif attribute == '适用人数':
+            # 规范query中使用人数
+            query_num_people = self.normalize_num_people(tracker.latest_message['text'])
+            object_of_suitable_for_num_people_list = []
+            for obj in object_of_interest_list:
+                if '适用人数' in obj:
+                    if query_num_people in obj['适用人数']:
+                        object_of_suitable_for_num_people_list.append(obj['name'])
+
+            if len(object_of_suitable_for_num_people_list) > 3:
+                object_of_suitable_for_num_people_list = random.sample(object_of_suitable_for_num_people_list, 3)
+                if query_num_people != '家庭':
+                    text = '适合{}个人使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                else:
+                    text = '适合{}使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+
+            elif len(object_of_suitable_for_num_people_list) > 0:
+                if query_num_people != '家庭':
+                    text = '适合{}个人使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                else:
+                    text = '适合{}使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+
+        elif attribute == '纯水流量':
+            prod_attr_lst = [(object['name'], float(object[attribute].strip('L/min'))) for object in object_of_interest_list if attribute in object]
+            prod_attr_lst = sorted(prod_attr_lst, key=lambda x: x[1], reverse=True)  # 根据属性值来排序
+            max_attr_value = prod_attr_lst[0][1]
+            prod_attr_dict_lst = [{'name': item[0], attribute: item[1]} for item in prod_attr_lst if item[1] == max_attr_value]
+            if len(prod_attr_dict_lst) == 1:
+                text = "咱们店里现在正在卖的流速最快的一款是{}".format(prod_attr_dict_lst[0]['name'])
+            elif len(prod_attr_dict_lst) == 2:
+                text = "咱们店里现在正在卖的流速最快的两款是{}和{}".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name'])
+            else:
+                object_name_rand3 = random.sample(prod_attr_dict_lst, 3)
+                text = "咱们店里现在正在卖的流速最快的几款是 " + ' '.join([prod_attr['name'] for prod_attr in object_name_rand3])
+
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+
+        elif attribute == '出水口':
+            # 规范query中单出水口
+            query_outlet = re.search('([单/双][通道/水口/出水]?).*', tracker.latest_message['text']).group(1)[0]
+            object_of_outlet_list = []
+            for obj in object_of_interest_list:
+                if '出水口' in obj:
+                    if query_outlet in obj['出水口']:
+                        object_of_outlet_list.append(obj['name'])
+
+            if len(object_of_outlet_list) > 3:
+                object_of_outlet_list = random.sample(object_of_outlet_list, 3)
+                text = '有{}出水通道的产品有{}'.format(query_outlet, ','.join(object_of_outlet_list))
+            elif len(object_of_outlet_list) > 0:
+                text = '有{}出水通道的产品有{}'.format(query_outlet, ','.join(object_of_outlet_list))
+
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+
         elif attribute == '安装方式':
-            pass
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+
         else:
             dispatcher.utter_message(response="utter_rephrase")
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
         object_identifier = object_of_interest_list[-1][key_attribute] if product_exist_flag else None
-
-        await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_of_interest_list))
 
         # 在run函数中已经确保一定是在这个shop_list里面
         object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除

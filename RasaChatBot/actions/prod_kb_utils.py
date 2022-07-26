@@ -47,7 +47,7 @@ class NormalizeName(object):
     def run(self, ques):
         # todo object_name is list type
         if not ques:
-            return ques  # none
+            return []  # none
         if isinstance(ques, list):
             # 取最后一个product
             ques_new = []
