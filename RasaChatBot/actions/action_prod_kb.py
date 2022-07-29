@@ -281,8 +281,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         logging.info("product， attribute： {} {}".format(object_type, attribute))
         if attribute and object_type:
             return await self._query_attribute(dispatcher, shop_id+'_'+object_type, attribute, tracker)
-        elif not attribute or new_request:
-            return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
+        # elif not attribute or new_request:
+        #     return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
         elif attribute:
             return await self._query_attribute(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product
 

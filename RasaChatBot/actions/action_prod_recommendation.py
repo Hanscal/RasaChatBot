@@ -174,7 +174,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             object_name_union = name_union | id_union
             object_name = list(object_name_union)
             product_exist_flag = True if object_name else False
-        else:
+        if not product_exist_flag:
             object_name = prod_names
         for prod in object_name:
             # 通过商品拿到属性值
@@ -266,13 +266,15 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         elif attribute == '出水口':
             # 规范query中单出水口
-            query_outlet = re.search('([单/双][通道/水口/出水]?).*', tracker.latest_message['text']).group(1)[0]
+            if re.search('([单/双][通道/水口/出水]?).*', tracker.latest_message['text']):
+                query_outlet = re.search('([单/双][通道/水口/出水]?).*', tracker.latest_message['text']).group(1)[0]
+            else:
+                query_outlet = '无'
             object_of_outlet_list = []
             for obj in object_of_interest_list:
                 if '出水口' in obj:
                     if query_outlet in obj['出水口']:
                         object_of_outlet_list.append(obj['name'])
-
             if len(object_of_outlet_list) > 3:
                 object_of_outlet_list = random.sample(object_of_outlet_list, 3)
                 text = '有{}出水通道的产品有{}'.format(query_outlet, ','.join(object_of_outlet_list))
@@ -281,7 +283,25 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
             await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
 
-        elif attribute == '安装方式':
+        elif attribute == '安装位置':
+            # 规范query中安装位置
+            if re.search('([厨房/餐厅/做饭/厨下]+?).*', tracker.latest_message['text']):
+                query_installation_location = '厨下式'
+            elif re.search('([挂/壁挂]+?).*', tracker.latest_message['text']):
+                query_installation_location = '壁挂式'
+            else:
+                query_installation_location = '无'
+            object_of_installation_location_list = []
+            for obj in object_of_interest_list:
+                if '安装位置' in obj:
+                    if query_installation_location in obj['安装位置']:
+                        object_of_installation_location_list.append(obj['name'])
+            if len(object_of_installation_location_list) > 3:
+                object_of_installation_location_list = random.sample(object_of_installation_location_list, 3)
+                text = '安装方式为{}的产品有{}'.format(query_installation_location, ','.join(object_of_installation_location_list))
+            elif len(object_of_installation_location_list) > 0:
+                text = '安装方式为{}的产品有{}'.format(query_installation_location, ','.join(object_of_installation_location_list))
+
             await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
 
         else:
