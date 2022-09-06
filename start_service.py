@@ -19,7 +19,7 @@ from wtforms.validators import DataRequired
 
 from scripts.user_model import User, query_user
 from scripts.chat_request import requestServerbot, requestRasabot
-from scripts.external_service import know_similarity
+from scripts.external_service import know_similarity, request_chitchat
 
 # from config.config import get_logger, proj_root
 # logger = get_logger('live', os.path.join(proj_root, 'log/live_assistant.log'))
@@ -134,11 +134,22 @@ def live_assistant_ui():
         data_json = {"message":question,"user_name":user_name,"shop_name":shop_name}
         shop_name_map = {"yunjing":"10010", 'qinyuan':"10012", "planet":"10007"}
         faq_dict = know_similarity(text=question,b_id=shop_name_map.get(shop_name.lower(), '0'))
-        entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
-        intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
+        faq_confidence = faq_dict['confidence']
+        if faq_confidence > 0.88:
+            link = faq_dict['link']
+            if link:
+                answer = str(link)
+            else:
+                answer = faq_dict['answer']
+        else:
+            # entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
+            res_dic = request_chitchat(user_name, shop_name, question)
+            answer = str(res_dic.get('response',''))
+
+        # intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
         logger.info("response: {}".format(answer))
         logger.info('total costs {:.2f}s'.format(time.time() - b0), model_name='live_assistant_ui')
-        answer = str({"response":answer,"intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities, "faq_match":faq_dict})
+        # answer = str({"response":answer,"intent":{"name":intent_name, "confidence":intent_confidence}, "entities":entities, "faq_match":faq_dict})
         return json.dumps({'answer': answer},ensure_ascii=False)
 
     return render_template("chat.html", username=username)
