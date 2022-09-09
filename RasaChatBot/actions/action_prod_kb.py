@@ -31,12 +31,12 @@ from rasa_sdk.knowledge_base.utils import (
 
 import sys
 sys.path.append('.')
-from action_config import shop_list, attribute_url
-from action_config import EnToZh
-from action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-from action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
-from prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
-
+from .action_config import shop_list, attribute_url
+from .action_config import EnToZh
+from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from .prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
+from .chat_utils import chitchat_response
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph
 # graph = Graph(uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD)
@@ -173,8 +173,11 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         shop_id = user_id.split(':')[0]
         # todo 对链接号进行映射
         object_name = name_norm.run(object_name)  # 返回的是list, 或者none
+        object_name
         if object_name:
             object_name = object_name[-1]  # 取最后一个object_name
+        elif object_name == []:
+            object_name = None
         # todo 商品链接映射
         self.shop_list_link = shop_list.get(shop_id, {})
         if object_name in self.shop_list_link:
@@ -187,13 +190,18 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         logging.info("object_name, attribute: {},{}".format(object_name, attribute))
         if not object_name or not attribute:
-            dispatcher.utter_message(response="utter_rephrase")
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         # logging.info("slots {}".format(tracker.slots))
         object_of_interest = await utils.call_potential_coroutine(self.knowledge_base.get_object(object_type, object_name))
         logging.info("objects interest {}, object_name {}".format(object_of_interest, object_name))
-        if attribute not in object_of_interest:
+        if not object_of_interest:
+            dispatcher.utter_message(text="我不太明白您的问题,请换一种说法哦")
+            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
+        
+        if attribute and attribute not in object_of_interest:
             # 如果不在映射库中，调用服务
             msg = tracker.latest_message['text'] +' ' + attribute
             try:
@@ -206,7 +214,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                 print("post attribute service error: {}".format(e))
 
         if not object_of_interest or attribute not in object_of_interest:
-            dispatcher.utter_message(response="utter_rephrase")
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
         # logging.info("{} {}".format(object_of_interest, attribute))
         value = object_of_interest[attribute]
@@ -221,7 +230,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         object_identifier = object_of_interest[key_attribute]
         # logging.info("object identifier {}, key_attirbute {}".format(object_identifier, key_attribute))
         await utils.call_potential_coroutine(self.utter_attribute_value(dispatcher, object_representation, attribute, value))
-
         # 在run函数中已经确保一定是在这个shop_list里面
         object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
         slots = [
@@ -277,7 +285,6 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         #     # knowledge base
         #     dispatcher.utter_message(response="utter_ask_rephrase")
         #     return []
-        print("product action",object_type, attribute)
         logging.info("product， attribute： {} {}".format(object_type, attribute))
         if attribute and object_type:
             return await self._query_attribute(dispatcher, shop_id+'_'+object_type, attribute, tracker)
@@ -285,6 +292,13 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         #     return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
         elif attribute:
             return await self._query_attribute(dispatcher, shop_id+'_product', attribute, tracker)  # object_type默认product
+        elif object_type and not attribute:
+            #仅有object_type
+            dispatcher.utter_message(text="请提供{}的更多查询信息.".format(self.en_to_zh(object_type)))
+        else:
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
+            # return await self._query_objects(dispatcher, shop_id+'_'+object_type, tracker)
 
         dispatcher.utter_message(response="utter_ask_rephrase")
         return []

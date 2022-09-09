@@ -34,14 +34,12 @@ from rasa_sdk.knowledge_base.utils import (
 
 import sys
 sys.path.append('.')
-from action_config import shop_list, attr_list, attribute_url
-from action_config import EnToZh
-from action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-from action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
-from prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
-
-from action_chat import ActionDefaultFallback
-import pdb
+from .action_config import shop_list, attr_list, attribute_url
+from .action_config import EnToZh,recommended_object
+from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from .prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
+from .chat_utils import chitchat_response
 
 
 # default neo4j account should be user="neo4j", password="neo4j"
@@ -103,6 +101,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             object_name: List,
             attribute_name: List,
             attribute_value: Text,
+            tracker: Tracker
     ) -> None:
         """
         Utters a response that informs the user about the attribute value of the
@@ -118,8 +117,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         if attribute_value:
             dispatcher.utter_message(text=attribute_value)
         else:
-            pdb.set_trace()
-            dispatcher.utter_message(response="utter_rephrase")
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
             # dispatcher.utter_message(response='action_greet')
             # ActionDefaultFallback.run(dispatcher,tracker,domain)
 
@@ -145,6 +144,14 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         object_name = get_object_name(tracker,self.knowledge_base.ordinal_mention_mapping,self.use_last_object_mention)
         user_id = tracker.sender_id
         shop_id = user_id.split(':')[0]
+        if shop_id != "qinyuan":
+            # text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text="该店铺暂不支持商品推荐功能哦")
+            
+            return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
+        
+        
+        
         # todo 对链接号进行映射
         object_name = name_norm.run(object_name) # 得到list
 
@@ -163,7 +170,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         # todo 对商品名进行实体链接
 
         logging.info("object_name, attribute: {},{}".format(object_name, attribute))
-
+        
+        recommended_object_name = random.choice(recommended_object)
         object_of_interest_list = []
         # 返回25个产品的key,value list，格式为[{'name': 'KRL5003', 'id': '1'...},{'name': 'KRL5006', 'id': '2'...},...]
         all_prod_names = await utils.call_potential_coroutine(self.knowledge_base.get_objects(object_type, attributes=[], limit=25))
@@ -187,11 +195,12 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         # 如果没有属性，或者一个商品也没有返回，则退出查询
         if not attribute or not object_of_interest_list:
-            # dispatcher.utter_message(response="utter_rephrase")
-            # dispatcher.utter_message(response="action_chitchat")
-            pdb.set_trace()
-            print(ActionDefaultFallback.run(dispatcher,tracker,domain))
-            dispatcher.utter_message(ActionDefaultFallback.run(dispatcher,tracker,domain))
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
+            # # dispatcher.utter_message(response="action_chitchat")
+            # pdb.set_trace()
+            # print(ActionDefaultFallback.run(dispatcher,tracker,domain))
+            # dispatcher.utter_message(ActionDefaultFallback.run(dispatcher,tracker,domain))
             
             
             
@@ -224,16 +233,32 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             max_attr_value = prod_attr_lst[0][1]
             prod_attr_dict_lst = [{'name': item[0], attribute: item[1]} for item in prod_attr_lst if
                                   item[1] == max_attr_value]
+            
+            prod_lst = [item[0] for item in prod_attr_lst if item[1] == max_attr_value]
+            
             if len(prod_attr_dict_lst) == 1:
-                text = "咱们店里现在正在售卖的产品中体积最小巧的一款是{}".format(prod_attr_dict_lst[0]['name'])
+                if recommended_object_name in prod_lst:
+                    text = "咱们店里现在正在售卖的产品中体积最小巧的一款是{}".format(prod_attr_dict_lst[0]['name'])
+                else:
+                    text = "咱们店里现在正在售卖的产品中体积最小巧的一款是{},".format(prod_attr_dict_lst[0]['name'])
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
             elif len(prod_attr_dict_lst) == 2:
-                dispatcher.utter_message(
-                    "咱们店里现在正在售卖的产品中体积最小巧的两款是{}和{}".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name']))
+                if recommended_object_name in prod_lst:  
+                    text = "咱们店里现在正在售卖的产品中体积最小巧的两款是{}和{}".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name'])
+                else:
+                    text = "咱们店里现在正在售卖的产品中体积最小巧的两款是{}和{},".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name'])
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
             else:
-                prod_attr_dict_lst = random.sample(prod_attr_dict_lst, 3)
-                text = "咱们店里现在正在售卖的产品中体积最小巧的一款是 " + ' '.join([prod_attr['name'] for prod_attr in prod_attr_dict_lst])
+                if recommended_object_name in prod_lst:
+                    prod_attr_dict_lst.remove(recommended_object_name)
+                    prod_attr_dict_lst = random.sample(prod_attr_dict_lst, 2)
+                    text = "咱们店里现在正在售卖的产品中体积最小巧的款式有" + ',{},'.format(recommended_object_name) + ','.join([prod_attr['name'] for prod_attr in prod_attr_dict_lst])
+                else:
+                    prod_attr_dict_lst = random.sample(prod_attr_dict_lst, 3)
+                    text = "咱们店里现在正在售卖的产品中体积最小巧的款式有" + ','.join([prod_attr['name'] for prod_attr in prod_attr_dict_lst])
+                    text += ",目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
 
-            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text, tracker))
 
         elif attribute == '适用人数':
             # 规范query中使用人数
@@ -245,39 +270,75 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                         object_of_suitable_for_num_people_list.append(obj['name'])
 
             if len(object_of_suitable_for_num_people_list) > 3:
-                object_of_suitable_for_num_people_list = random.sample(object_of_suitable_for_num_people_list, 3)
-                if query_num_people != '家庭':
-                    text = '适合{}个人使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                if recommended_object_name in object_of_suitable_for_num_people_list:
+                    object_of_suitable_for_num_people_list.remove(recommended_object_name)
+                    object_of_suitable_for_num_people_list = random.sample(object_of_suitable_for_num_people_list, 2)
+                    if query_num_people != '家庭':
+                        text = '适合{}个人使用的产品有{},{}'.format(query_num_people, recommended_object_name, ','.join(object_of_suitable_for_num_people_list))
+                    else:
+                        text = '适合{}使用的产品有{},{}'.format(query_num_people, recommended_object_name, ','.join(object_of_suitable_for_num_people_list))
                 else:
-                    text = '适合{}使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                    object_of_suitable_for_num_people_list = random.sample(object_of_suitable_for_num_people_list, 3)
+                    if query_num_people != '家庭':
+                        text = '适合{}个人使用的产品有{},'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                        text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
+                    else:
+                        text = '适合{}使用的产品有{},'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                        text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
 
             elif len(object_of_suitable_for_num_people_list) > 0:
-                if query_num_people != '家庭':
-                    text = '适合{}个人使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                if recommended_object_name in object_of_suitable_for_num_people_list:
+                    if query_num_people != '家庭':
+                        text = '适合{}个人使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                    else:
+                        text = '适合{}使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
                 else:
-                    text = '适合{}使用的产品有{}'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                    if query_num_people != '家庭':
+                        text = '适合{}个人使用的产品有{},'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                        text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
+                    else:
+                        text = '适合{}使用的产品有{},'.format(query_num_people, ','.join(object_of_suitable_for_num_people_list))
+                        text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
+            
+            else:
+                text = "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
 
-            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text, tracker))
 
         elif attribute == '纯水流量':
             prod_attr_lst = [(object['name'], float(object[attribute].strip('L/min'))) for object in object_of_interest_list if attribute in object]
             prod_attr_lst = sorted(prod_attr_lst, key=lambda x: x[1], reverse=True)  # 根据属性值来排序
             max_attr_value = prod_attr_lst[0][1]
             prod_attr_dict_lst = [{'name': item[0], attribute: item[1]} for item in prod_attr_lst if item[1] == max_attr_value]
+            prod_lst = [item[0] for item in prod_attr_lst if item[1] == max_attr_value]
             if len(prod_attr_dict_lst) == 1:
-                text = "咱们店里现在正在卖的流速最快的一款是{}".format(prod_attr_dict_lst[0]['name'])
+                if recommended_object_name in prod_lst:
+                    text = "咱们店里现在正在售卖的产品中流速最快的一款是{}".format(prod_attr_dict_lst[0]['name'])
+                else:
+                    text = "咱们店里现在正在售卖的产品中流速最快的一款是{},".format(prod_attr_dict_lst[0]['name'])
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
             elif len(prod_attr_dict_lst) == 2:
-                text = "咱们店里现在正在卖的流速最快的两款是{}和{}".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name'])
+                if recommended_object_name in prod_lst:  
+                    text = "咱们店里现在正在售卖的产品中流速最快的两款是{}和{}".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name'])
+                else:
+                    text = "咱们店里现在正在售卖的产品中流速最快的两款是{}和{},".format(prod_attr_dict_lst[0]['name'], prod_attr_dict_lst[1]['name'])
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
             else:
-                object_name_rand3 = random.sample(prod_attr_dict_lst, 3)
-                text = "咱们店里现在正在卖的流速最快的几款是 " + ' '.join([prod_attr['name'] for prod_attr in object_name_rand3])
+                if recommended_object_name in prod_lst:
+                    prod_attr_dict_lst.remove(recommended_object_name)
+                    prod_attr_dict_lst = random.sample(prod_attr_dict_lst, 2)
+                    text = "咱们店里现在正在售卖的产品中流速最快的款式有" + ',{},'.format(recommended_object_name) + ','.join([prod_attr['name'] for prod_attr in prod_attr_dict_lst])
+                else:
+                    prod_attr_dict_lst = random.sample(prod_attr_dict_lst, 3)
+                    text = "咱们店里现在正在售卖的产品中流速最快的款式有" + ','.join([prod_attr['name'] for prod_attr in prod_attr_dict_lst])
+                    text += ",目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
 
-            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text, tracker))
 
         elif attribute == '出水口':
             # 规范query中单出水口
-            if re.search('([单/双][通道/水口/出水]?).*', tracker.latest_message['text']):
-                query_outlet = re.search('([单/双][通道/水口/出水]?).*', tracker.latest_message['text']).group(1)[0]
+            if re.search('([单/双][通道/水口/出水/出口]?).*', tracker.latest_message['text']):
+                query_outlet = re.search('([单/双][通道/水口/出水/出口]?).*', tracker.latest_message['text']).group(1)[0]
             else:
                 query_outlet = '无'
             object_of_outlet_list = []
@@ -286,12 +347,26 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                     if query_outlet in obj['出水口']:
                         object_of_outlet_list.append(obj['name'])
             if len(object_of_outlet_list) > 3:
-                object_of_outlet_list = random.sample(object_of_outlet_list, 3)
-                text = '有{}出水通道的产品有{}'.format(query_outlet, ','.join(object_of_outlet_list))
-            elif len(object_of_outlet_list) > 0:
-                text = '有{}出水通道的产品有{}'.format(query_outlet, ','.join(object_of_outlet_list))
+                if recommended_object_name in object_of_outlet_list:
+                    object_of_outlet_list.remove(recommended_object_name)
+                    object_of_outlet_list = random.sample(object_of_outlet_list, 2)
+                    text = '{}出水通道的产品有{},{}'.format(query_outlet,  recommended_object_name, ','.join(object_of_outlet_list))
+                else:
+                    object_of_outlet_list = random.sample(object_of_outlet_list, 3)
+                    text = '{}出水通道的产品有{},'.format(query_outlet, ','.join(object_of_outlet_list))
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
 
-            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+            elif len(object_of_outlet_list) > 0:
+                if recommended_object_name in object_of_outlet_list:
+                    text = '{}出水通道的产品有{}'.format(query_outlet, ','.join(object_of_outlet_list))
+                else:
+                    text = '{}出水通道的产品有{},'.format(query_outlet, ','.join(object_of_outlet_list))
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
+
+            else:
+                text = "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
+
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text, tracker))
 
         elif attribute == '安装位置':
             # 规范query中安装位置
@@ -307,19 +382,28 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
                     if query_installation_location in obj['安装位置']:
                         object_of_installation_location_list.append(obj['name'])
             if len(object_of_installation_location_list) > 3:
-                object_of_installation_location_list = random.sample(object_of_installation_location_list, 3)
-                text = '安装方式为{}的产品有{}'.format(query_installation_location, ','.join(object_of_installation_location_list))
+                if recommended_object_name in object_of_installation_location_list:
+                    object_of_installation_location_list.remove(recommended_object_name)
+                    object_of_installation_location_list = random.sample(object_of_installation_location_list, 2)
+                    text = '安装方式为{}的产品有{},{}'.format(query_installation_location,  recommended_object_name, ','.join(object_of_installation_location_list))
+                else: 
+                    object_of_installation_location_list = random.sample(object_of_installation_location_list, 3)
+                    text = '安装方式为{}的产品有{}'.format(query_installation_location, ','.join(object_of_installation_location_list))
+                    
             elif len(object_of_installation_location_list) > 0:
-                text = '安装方式为{}的产品有{}'.format(query_installation_location, ','.join(object_of_installation_location_list))
+                if recommended_object_name in object_of_installation_location_list:
+                    text = '安装方式为{}的产品有{}'.format(query_installation_location, ','.join(object_of_installation_location_list))
+                else:
+                    text = '安装方式为{}的产品有{},'.format(query_installation_location, ','.join(object_of_installation_location_list))
+                    text += "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
+            else:
+                text = "目前{}是最受欢迎的产品哦,您可以多多关注最新优惠信息.".format(recommended_object_name)
 
-            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
+            await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text, tracker))
 
         else:
-            # dispatcher.utter_message(response="utter_rephrase")
-            # dispatcher.utter_message(response="action_chitchat")
-            # dispatcher.utter_message(response=action_greet)
-            pdb.set_trace()
-            dispatcher.utter_message(response=ActionDefaultFallback.run(dispatcher,tracker,domain))
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
             
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 

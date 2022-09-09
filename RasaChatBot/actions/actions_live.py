@@ -15,17 +15,14 @@ from rasa_sdk.executor import CollectingDispatcher
   - shipment_return
   - shipment_insurance
   - shipment_company
-  - shipment_info
-  - shipment_destination
-  - invoice
   - discount
   - discount_lottery
   - human_service
 """
 
 file_root = os.path.dirname(__file__)
-yunjing_info = json.load(open(os.path.join(file_root, 'kb/yunjing_response.json'), mode='r', encoding='utf-8'))
-planet_info = json.load(open(os.path.join(file_root, 'kb/planet_response.json'), mode='r', encoding='utf-8'))
+yunjing_info = json.load(open(os.path.join(file_root, 'kb/yunjing_response.json'), mode='r'))
+planet_info = json.load(open(os.path.join(file_root, 'kb/planet_response.json'), mode='r'))
 
 class ActionProductQuality(Action):
     def name(self) -> Text:
@@ -144,51 +141,6 @@ class ActionScompany(Action):
     ) -> List[Dict[Text, Any]]:
 
         dispatcher.utter_message(response='utter_shipment_company')
-
-        return []
-
-class ActionSinfo(Action):
-    def name(self) -> Text:
-        return "action_shipment_info"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-
-        dispatcher.utter_message(response='utter_shipment_info')
-
-        return []
-
-class ActionSdestination(Action):
-    def name(self) -> Text:
-        return "action_shipment_destination"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-
-        dispatcher.utter_message(response='utter_shipment_destination')
-
-        return []
-
-class ActionSinvoice(Action):
-    def name(self) -> Text:
-        return "action_invoice"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-
-        dispatcher.utter_message(response='utter_invoice')
 
         return []
 

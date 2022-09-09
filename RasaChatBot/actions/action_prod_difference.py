@@ -34,11 +34,12 @@ from rasa_sdk.knowledge_base.utils import (
 from neo4j import GraphDatabase
 import sys
 sys.path.append('.')
-from action_config import shop_list, attr_list, attribute_url
-from action_config import EnToZh
-from action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-from action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
-from prod_kb_utils import NormalizeName, RetrieveProduct
+from .action_config import shop_list, attr_list, attribute_url
+from .action_config import EnToZh
+from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from .prod_kb_utils import NormalizeName, RetrieveProduct
+from .chat_utils import chitchat_response
 
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph
@@ -58,29 +59,29 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         self.shop_list_link = {}
         self.attr_list_link = []
 
-    # 只 query 产品属性
-    def utter_attribute_value(
-        self,
-        dispatcher: CollectingDispatcher,
-        object_name: Text,
-        attribute_name: Text,
-        attribute_value: Text,
-    ) -> None:
-        """
-        Utters a response that informs the user about the attribute value of the
-        attribute of interest.
-        Args:
-            dispatcher: the dispatcher
-            object_name: the name of the object
-            attribute_name: the name of the attribute
-            attribute_value: the value of the attribute
-        """
-        if attribute_value:
-            dispatcher.utter_message(
-                text="{}的{}是：{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name),self.en_to_zh(attribute_value)).replace('\n','')
-            )
-        else:
-            dispatcher.utter_message(text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name)))
+    # # 只 query 产品属性
+    # def utter_attribute_value(
+    #     self,
+    #     dispatcher: CollectingDispatcher,
+    #     object_name: Text,
+    #     attribute_name: Text,
+    #     attribute_value: Text,
+    # ) -> None:
+    #     """
+    #     Utters a response that informs the user about the attribute value of the
+    #     attribute of interest.
+    #     Args:
+    #         dispatcher: the dispatcher
+    #         object_name: the name of the object
+    #         attribute_name: the name of the attribute
+    #         attribute_value: the value of the attribute
+    #     """
+    #     if attribute_value:
+    #         dispatcher.utter_message(
+    #             text="{}的{}是：{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name),self.en_to_zh(attribute_value)).replace('\n','')
+    #         )
+    #     else:
+    #         dispatcher.utter_message(text="没有找到{}的{}".format(self.en_to_zh(object_name), self.en_to_zh(attribute_name)))
 
     # 只 query 产品属性
     def utter_product_difference(
@@ -89,6 +90,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             object_name: List,
             attribute_name: List,
             attribute_value: List,
+            tracker: Tracker,
     ) -> None:
         """
         Utters a response that informs the user about the attribute value of the
@@ -128,8 +130,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             else:
                 dispatcher.utter_message(text="{}与{}的区别是：{}".format(self.en_to_zh(object_name[0]), self.en_to_zh(object_name[1]), ''.join(diff_text)))
         else:
-            # dispatcher.utter_template(response="action_chitchat")
-            dispatcher.utter_template(response="action_greet")
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
 
 
 
@@ -166,8 +168,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         # 如果存在的商品少于两个，则退出查询
         if not object_name or len(object_name) < 2:
-            dispatcher.utter_template(response="action_greet")
-            # dispatcher.utter_template('action_chitchat', tracker, silent_fail=True)
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
 
 
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
@@ -198,11 +200,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         # 任何一个商品查询不到，则退出查询
         if not object_of_interest1 or not object_of_interest2:
-            dispatcher.utter_template(response="action_greet")
-
-            # dispatcher.utter_template('action_chitchat', tracker, silent_fail=True)
-
-
+            text_response = chitchat_response(tracker)
+            dispatcher.utter_message(text=text_response)
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         prod_diff_key = []
@@ -243,7 +242,7 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
         object_identifier = object_of_interest2[key_attribute]
 
-        await utils.call_potential_coroutine(self.utter_product_difference(dispatcher, [object_representation1, object_representation2], prod_diff_key, prod_diff_value))
+        await utils.call_potential_coroutine(self.utter_product_difference(dispatcher, [object_representation1, object_representation2], prod_diff_key, prod_diff_value, tracker))
 
         # 在run函数中已经确保一定是在这个shop_list里面
         object_type_wo_shop = object_type[len(shop_id):].lstrip('_')  # 这里有问题，需要将shop name 去除
