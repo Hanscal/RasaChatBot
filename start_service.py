@@ -210,7 +210,7 @@ if __name__ == '__main__':
     # 启动服务，开启多线程模式
     app.run(
         host='0.0.0.0',
-        port=8611,
+        port=8088,
         threaded=True,
         debug=False
     )

@@ -16,8 +16,8 @@ intents:
   - live_buy
   - product_quality
   - product_difference
-  - product_exist
   - product_recommendation
+  - product_exist
   - shipment_location
   - shipment_time
   - shipment_price
@@ -124,4 +124,3 @@ actions:
   - utter_live_share
   - utter_live_introduction
   - utter_product_exist
-  - action_chitchat

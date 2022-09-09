@@ -46,15 +46,11 @@ def requestRasabot(url, params, method='post'):
     """
     rasaUrl = "http://{0}:{1}/{2}".format(RASA_HOST, RASA_PORT, url)
     response = ''
-    print(rasaUrl)
     logger.info("params {}".format(params))
     try:
         if method == 'post':
-            # print(98645)
             response = requests.post(rasaUrl, data=json.dumps(params), headers={'Content-Type': 'application/json'})
-            # print(6434)
             response = response.text
-            # print(484)
         elif method == 'get':
             response = requests.get(rasaUrl, headers={'Content-Type': 'application/json'})
             response = response.text
@@ -72,20 +68,15 @@ def requestServerbot(data_json):
     # nlu部分
     message_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, message_input))
     try:
-        # print(234)
         nlu_response = requestRasabot(url='model/parse', params={'text': message_input.replace(' ',''), "message_id": message_id}, method='post')
         nlu_response = json.loads(nlu_response)
-        print(645)
         intent = nlu_response.get('intent', {})
         intent_name = intent.get('name', None)
         if intent_name == 'faq':
-            # print(456)
             intent_name = nlu_response.get('response_selector', {}).get("default", {}).get("response", {}).get("intent_response_key", 'faq')
         intent_confidence = intent.get('confidence', None)
-        # print(8946)
         logger.info("intent name: {}".format(intent_name))
         entity_tmp = nlu_response.get('entities', [])
-        # print(345)
         entities = [{"name": ent['entity'], "value": ent['value'], "confidence": round(ent['confidence_entity'], 2), "pos":(ent['start'],ent['end'])} for ent in entity_tmp]
     except Exception as e:
         logger.info("nlu request error: {}".format(e))
@@ -93,7 +84,6 @@ def requestServerbot(data_json):
     user_name = data_json.get('user_name', 'hanscal')
     shop_name = data_json.get('shop_name', '')
     input_name = shop_name + ':' + user_name
-    # print(456)
     try:
         response = requestRasabotServer(input_name, message_input)
     except Exception as e:
