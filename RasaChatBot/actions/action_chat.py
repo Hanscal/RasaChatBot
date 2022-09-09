@@ -18,8 +18,8 @@ from rasa_sdk.events import UserUtteranceReverted
 from rasa_sdk.executor import CollectingDispatcher
 import sys
 sys.path.append('.')
-from action_config import shop_list
-from chat_utils import chitchat_api
+from .action_config import shop_list
+from .chat_utils import chitchat_api
 
 file_root = os.path.dirname(__file__)
 

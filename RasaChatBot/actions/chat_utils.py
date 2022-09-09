@@ -3,7 +3,8 @@ import json
 import time
 
 import requests
-
+from typing import Any, Text, Dict, List
+from rasa_sdk import Action, Tracker, events
 # API Key
 API_KEY = "uy9jpgMbL3Igb3Lm4ib9GPrf"
 SECRET_KEY = "NKCSc2aTswGRrq3tZgCULrP7PVdWSOHj"
@@ -87,3 +88,10 @@ def chitchat_api(user_name, text_in, url=url, time_out=300):
             response = ""
     return {"response": response}
     # return json.dumps({"response": response},ensure_ascii=False)
+
+def chitchat_response(tracker: Tracker):
+    user_name = tracker.sender_id
+    text = tracker.latest_message.get('text')
+    response = chitchat_api(user_name, text)
+    response = response.get("response","抱歉我没能明白您的话")
+    return response
