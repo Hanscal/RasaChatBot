@@ -90,12 +90,14 @@
                                       "商品质量": 是正品吗<br/>
                                       "已购买": 已经下单啦<br/>
                                       "客服": 人工客服时间<br/>
+
                                       "发票": 能开发票吗<br/>
                                       "打招呼": 你好<br/>
                                       "再见": 再见<br/>
                                       "你是谁": 这是真人还是假人<br/>
                                       "你能做什么": 你能做什么<br/>
                                       "感谢": 谢谢<br/>
+
                                       "直播感谢": 主播好可爱<br/>
                                       "直播关注": 我是主播的粉丝<br/>
                                       "直播进群": 有粉丝群吗<br/>
@@ -142,7 +144,16 @@
 	</script>
 
 	<!-- custom scripts -->
-	<script src="static/main.js"></script>
+	<script>
+        $(document).ready(function(){
+          $("#msg_input").keydown(function(event){  //给按钮绑定keydown事件
+              if(event.keyCode==13){  
+                  $("#send_button").click();  //触发文本框的点击事件
+              }  
+          });
+        })
+    </script>
+    <script src="static/main.js"></script>
 </body>
 
 </html>
