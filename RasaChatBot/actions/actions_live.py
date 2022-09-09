@@ -24,8 +24,8 @@ from rasa_sdk.executor import CollectingDispatcher
 """
 
 file_root = os.path.dirname(__file__)
-yunjing_info = json.load(open(os.path.join(file_root, 'kb/yunjing_response.json'), mode='r'))
-planet_info = json.load(open(os.path.join(file_root, 'kb/planet_response.json'), mode='r'))
+yunjing_info = json.load(open(os.path.join(file_root, 'kb/yunjing_response.json'), mode='r', encoding='utf-8'))
+planet_info = json.load(open(os.path.join(file_root, 'kb/planet_response.json'), mode='r', encoding='utf-8'))
 
 class ActionProductQuality(Action):
     def name(self) -> Text:

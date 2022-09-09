@@ -31,11 +31,11 @@ from rasa_sdk.knowledge_base.utils import (
 
 import sys
 sys.path.append('.')
-from .action_config import shop_list, attribute_url
-from .action_config import EnToZh
-from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
-from .prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
+from action_config import shop_list, attribute_url
+from action_config import EnToZh
+from action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
 
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph

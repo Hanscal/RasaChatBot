@@ -39,7 +39,6 @@ login_manager.login_message_category = 'info'
 login_manager.login_message = '请登录'
 login_manager.init_app(app)
 
-
 @app.route('/live_assistant_api', methods=['POST'])
 def live_assistant_api():
     """
@@ -57,6 +56,7 @@ def live_assistant_api():
     if request.method == 'POST':
         data_json = request.get_json(force=True)
         entities, intent_confidence, intent_name, response = requestServerbot(data_json)
+
         intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
     else:
         logger.error("only support post method!")
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     # 启动服务，开启多线程模式
     app.run(
         host='0.0.0.0',
-        port=8088,
+        port=8611,
         threaded=True,
         debug=False
     )

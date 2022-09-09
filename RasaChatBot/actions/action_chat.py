@@ -18,14 +18,16 @@ from rasa_sdk.events import UserUtteranceReverted
 from rasa_sdk.executor import CollectingDispatcher
 import sys
 sys.path.append('.')
-from .action_config import shop_list
+from action_config import shop_list
+from chat_utils import chitchat_api
+
 file_root = os.path.dirname(__file__)
 
 
 class ChitChatKnowledge(object):
     def __init__(self):
-        self.chitchat_response = json.load(open(os.path.join(file_root, 'kb/chitchat_response.json'), mode='r'))
-        self.jokes = json.load(open(os.path.join(file_root, 'kb/jokes.json'), mode='r'))
+        self.chitchat_response = json.load(open(os.path.join(file_root, 'kb/chitchat_response.json'), mode='r', encoding='utf-8'))
+        self.jokes = json.load(open(os.path.join(file_root, 'kb/jokes.json'), mode='r', encoding='utf-8'))
 
     def get_personality(self, nickname):
         """
@@ -53,9 +55,11 @@ class ChitChatKnowledge(object):
         return res_final
 
     def get_chitchat_response(self, user_name, text_in):
-        chat_url = "http://113.31.111.86:48001/chat_ai"  # 需要根据情况修改
-        response = requests.post(url=chat_url, data=json.dumps({"event_title": text_in, "user_name": user_name}))
-        response = response.json()["response"]
+        # chat_url = "http://113.31.111.86:48001/chat_ai"  # 需要根据情况修改
+        # response = requests.post(url=chat_url, data=json.dumps({"event_title": text_in, "user_name": user_name}))
+        # response = response.json()["response"]
+        response = chitchat_api(user_name, text_in)
+        response = response["response"]
         return response
 
     def get_jokes(self):
@@ -87,7 +91,29 @@ class ActionAnswerGreet(Action):
         else:
             dispatcher.utter_message(response='utter_greet')
         return [UserUtteranceReverted()]
+    
+class ActionAnswerChitchat(Action):
+    """Executes the fallback action and goes back to the previous state
+    of the dialogue"""
 
+    def name(self):
+        return 'action_chitchat'
+
+    def run(self,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]):
+
+        user_name = tracker.sender_id
+        text = tracker.latest_message.get('text')
+        message = chitkb.get_chitchat_response(user_name, text)
+        print("chitchat闲聊:", message)
+        if message is not None:
+            dispatcher.utter_message(message)
+        else:
+            dispatcher.utter_template('utter_rephrase', tracker, silent_fail=True)
+        return [UserUtteranceReverted()]
+    
 class ActionDefaultFallback(Action):
     """Executes the fallback action and goes back to the previous state
     of the dialogue"""

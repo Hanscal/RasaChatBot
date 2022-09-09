@@ -34,11 +34,15 @@ from rasa_sdk.knowledge_base.utils import (
 
 import sys
 sys.path.append('.')
-from .action_config import shop_list, attr_list, attribute_url
-from .action_config import EnToZh
-from .action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-from .action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
-from .prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
+from action_config import shop_list, attr_list, attribute_url
+from action_config import EnToZh
+from action_config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from action_config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE
+from prod_kb_utils import NormalizeName, RetrieveProduct, Neo4jKnowledgeBase
+
+from action_chat import ActionDefaultFallback
+import pdb
+
 
 # default neo4j account should be user="neo4j", password="neo4j"
 # from py2neo import Graph
@@ -62,10 +66,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def normalize_num_people(query: Text):
         """
         适用人数推荐类query中人数提取
-
         Args:
             que: tracker.latest_message['text'] or attribute
-
         Returns: 适用人数
         """
         numerals = {'两': '2', '二': '2', '三': '3', '四': '4', '五': '5', '六': '6'}
@@ -82,10 +84,8 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
     def get_intent_value(tracker: Tracker):
         """
         nlu意图识别attribute_entity提取
-
         Args:
             tracker: the tracker
-
         Returns: list of entities
         """
         entity_list = []
@@ -118,7 +118,12 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         if attribute_value:
             dispatcher.utter_message(text=attribute_value)
         else:
+            pdb.set_trace()
             dispatcher.utter_message(response="utter_rephrase")
+            # dispatcher.utter_message(response='action_greet')
+            # ActionDefaultFallback.run(dispatcher,tracker,domain)
+
+            
 
     async def _query_recommendation(
         self,
@@ -130,11 +135,9 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         """
         Queries the knowledge base for the value of the requested attribute of the
         mentioned object and outputs it to the user.
-
         Args:
             dispatcher: the dispatcher
             tracker: the tracker
-
         Returns: list of slots
         """
         # import pdb;pdb.set_trace()
@@ -184,7 +187,14 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
 
         # 如果没有属性，或者一个商品也没有返回，则退出查询
         if not attribute or not object_of_interest_list:
-            dispatcher.utter_message(response="utter_rephrase")
+            # dispatcher.utter_message(response="utter_rephrase")
+            # dispatcher.utter_message(response="action_chitchat")
+            pdb.set_trace()
+            print(ActionDefaultFallback.run(dispatcher,tracker,domain))
+            dispatcher.utter_message(ActionDefaultFallback.run(dispatcher,tracker,domain))
+            
+            
+            
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         # 如果有属性和商品
@@ -305,7 +315,12 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
             await utils.call_potential_coroutine(self.utter_product_recommendation(dispatcher, object_name, object_of_interest_list, text))
 
         else:
-            dispatcher.utter_message(response="utter_rephrase")
+            # dispatcher.utter_message(response="utter_rephrase")
+            # dispatcher.utter_message(response="action_chitchat")
+            # dispatcher.utter_message(response=action_greet)
+            pdb.set_trace()
+            dispatcher.utter_message(response=ActionDefaultFallback.run(dispatcher,tracker,domain))
+            
             return [SlotSet(SLOT_MENTION, None), SlotSet(SLOT_ATTRIBUTE, None)]
 
         key_attribute = await utils.call_potential_coroutine(self.knowledge_base.get_key_attribute_of_object(object_type))
@@ -335,14 +350,11 @@ class MyKnowledgeBaseAction(ActionQueryKnowledgeBase):
         attribute was detected in the request or the user is talking about a new
         object type, multiple objects of the requested type are returned from the
         knowledge base.
-
         Args:
             dispatcher: the dispatcher
             tracker: the tracker
             domain: the domain
-
         Returns: list of slots
-
         """
         # import pdb;pdb.set_trace()
         object_type = tracker.get_slot(SLOT_OBJECT_TYPE)
