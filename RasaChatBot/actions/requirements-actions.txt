@@ -1,5 +1,4 @@
 lxml
 Levenshtein
-pymysql
 neo4j==4.4.2
 requests==2.25.1

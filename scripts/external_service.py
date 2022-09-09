@@ -84,6 +84,18 @@ def request_attribute(message):
         print("request attribute error:{}".format(e))
     return result_dic
 
+def request_corrected_query(message):
+    """返回query标准化版"""
+    url = "http://113.31.111.86:18615/query_correct"
+    dic = {"msg": message}
+    result_dic = {}
+    try:
+        res = requests.post(url, data=json.dumps(dic))
+        result_dic = res.json()
+    except Exception as e:
+        print("request attribute error:{}".format(e))
+    return result_dic
+
 def request_chitchat(user_name, shop_name, message):
     url = "http://113.31.111.86:18611/live_assistant_api"
     dic = {"user_name": user_name, "shop_name": shop_name, "message": message}
@@ -102,4 +114,5 @@ if __name__ == '__main__':
     print(know_similarity('你好'))
     print(time.time() - b0)
     print(request_attribute("亲请问一下你们发什么快递哦 快递"))
-    print(request_chitchat("hanscal", "yunjing", "地球有多大"))
+    print(request_corrected_query("you优惠卷"))
+    print(request_chitchat("hanscal", "yunjing", "地球有多大"))    

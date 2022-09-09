@@ -55,9 +55,13 @@ def live_assistant_api():
     entities = []
     if request.method == 'POST':
         data_json = request.get_json(force=True)
+        if not data_json['message']:
+            return json.dumps({"response":"请输入有效值", "intent":{"name":None, "confidence":None}, "entities":[]},ensure_ascii=False)
         entities, intent_confidence, intent_name, response = requestServerbot(data_json)
 
         intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
+        if isinstance(response, str):
+            response = response.replace('\\','')
     else:
         logger.error("only support post method!")
     logger.info("response: {}".format(response))
@@ -132,6 +136,8 @@ def live_assistant_ui():
         b0 = time.time()
         question = request.form["question"]
         data_json = {"message":question,"user_name":user_name,"shop_name":shop_name}
+        if not data_json['message']:
+            return json.dumps({'answer': "请输入有效值"},ensure_ascii=False)
         shop_name_map = {"yunjing":"10010", 'qinyuan':"10012", "planet":"10007"}
         faq_dict = know_similarity(text=question,b_id=shop_name_map.get(shop_name.lower(), '0'))
         faq_confidence = faq_dict['confidence']
@@ -145,6 +151,8 @@ def live_assistant_ui():
             # entities, intent_confidence, intent_name, answer = requestServerbot(data_json)
             res_dic = request_chitchat(user_name, shop_name, question)
             answer = str(res_dic.get('response',''))
+            if isinstance(answer, str):
+                answer = answer.replace('\\','')
 
         # intent_confidence = round(intent_confidence, 2) if intent_confidence is not None else intent_confidence
         logger.info("response: {}".format(answer))
